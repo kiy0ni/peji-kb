@@ -51,7 +51,7 @@ export async function generateAIResponse(userId, docPath, userContent) {
     
     // --- STEP 1: CONTEXT RETRIEVAL (CACHE-FIRST STRATEGY) ---
     
-    let contextText = "";
+    let contextText = '';
     
     // 1.1. Check Database Cache
     const cachedRecord = db.prepare('SELECT content FROM document_cache WHERE path = ?').get(docPath);
@@ -89,7 +89,7 @@ export async function generateAIResponse(userId, docPath, userContent) {
     // Truncate context to stay within LLM token limits (Context Window)
     const safeContext = contextText 
         ? contextText.slice(0, MAX_CONTEXT_CHARS) 
-        : "Content unavailable or empty.";
+        : 'Content unavailable or empty.';
 
     // --- STEP 3: CONVERSATION HISTORY (SHORT-TERM MEMORY) ---
 

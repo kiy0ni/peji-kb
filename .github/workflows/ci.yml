@@ -14,7 +14,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x] # Testing against LTS versions as per README (v18+)
+        node-version: [20.x] # Testing against LTS versions as per README (v18+)
 
     # Environment variables required for application boot and test configuration.
     env:

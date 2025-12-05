@@ -107,7 +107,7 @@ async function saveData() {
         if (domElements.saveStatus) {
             domElements.saveStatus.innerText = 'Error!';
         }
-        console.error("[DataManager] Save failed:", error);
+        console.error('[DataManager] Save failed:', error);
     }
 }
 
@@ -158,7 +158,7 @@ export async function initDataManager(easyMDE) {
         // create a debounced version of the save function (1 second delay)
         const debouncedSave = debounce(saveData, 1000);
 
-        easyMDE.codemirror.on("change", () => {
+        easyMDE.codemirror.on('change', () => {
             // Sync editor content to state
             currentData.note = easyMDE.value();
             
@@ -177,7 +177,7 @@ export async function initDataManager(easyMDE) {
     // Expose delete function globally for inline HTML onclick handlers
     // Note: This pattern assumes single-page functionality or careful naming.
     window.deleteSnippet = function(index) {
-        if (confirm("Are you sure you want to delete this snippet?")) {
+        if (confirm('Are you sure you want to delete this snippet?')) {
             // Remove item from state
             currentData.snippets.splice(index, 1);
             

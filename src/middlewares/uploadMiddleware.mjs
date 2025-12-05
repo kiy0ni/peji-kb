@@ -55,7 +55,7 @@ const storage = multer.diskStorage({
             const safeFolder = req.body.newCategoryName.replace(/[^a-z0-9_-]/gi, '').toLowerCase();
 
             if (!safeFolder) {
-                return cb(new Error("Invalid folder name. Only alphanumeric characters allowed."));
+                return cb(new Error('Invalid folder name. Only alphanumeric characters allowed.'));
             }
 
             targetDir = path.join(targetDir, safeFolder);
@@ -69,7 +69,7 @@ const storage = multer.diskStorage({
         // --- SCENARIO C: INVALID SELECTION ---
         } else {
             // Block uploads directly to the root 'courses' folder to maintain organization
-            return cb(new Error("Root upload is forbidden. Please select or create a folder."));
+            return cb(new Error('Root upload is forbidden. Please select or create a folder.'));
         }
 
         // --- DIRECTORY INITIALIZATION ---

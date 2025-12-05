@@ -107,7 +107,7 @@ export function insertApiKey(userId, label, scopes) {
 export function apiKeysListForUser(userId) {
     try {
         // 1. Introspection: Check if 'key_prefix' column exists in the current schema
-        const columns = db.prepare("PRAGMA table_info(api_keys)").all();
+        const columns = db.prepare('PRAGMA table_info(api_keys)').all();
         const hasPrefixColumn = columns.some(col => col.name === 'key_prefix');
 
         // 2. Construct Query based on Schema Availability

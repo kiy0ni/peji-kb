@@ -62,8 +62,8 @@ export const getAdminDashboard = (req, res) => {
     const { categories } = loadCoursesData();
     
     // 2. Parse Feedback Messages (Query Params)
-    const error = req.query.error === 'upload_failed' ? "Error during upload." : null;
-    const success = req.query.success === 'true' ? "Course added successfully!" : null;
+    const error = req.query.error === 'upload_failed' ? 'Error during upload.' : null;
+    const success = req.query.success === 'true' ? 'Course added successfully!' : null;
 
     // 3. User Management Data
     const users = db.prepare('SELECT id, username, role, created_at FROM users ORDER BY id ASC').all();
@@ -143,7 +143,7 @@ export const handleUpload = (req, res) => {
 /**
  * Middleware to handle Multer errors (e.g., file too large, wrong type).
  */
-export const handleUploadError = (err, req, res, next) => {
+export const handleUploadError = (err, req, res, _next) => {
     // Log the error internally if needed, then redirect user
     res.redirect(`/admin?error=upload_failed`);
 };

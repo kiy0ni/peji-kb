@@ -97,6 +97,6 @@ async function _callOllama(messages, model) {
         console.error('[AI ADAPTER] Ollama Connection Error:', error);
         
         // Return a safe, user-facing error message (Fail Gracefully)
-        return "⚠️ Error: Unable to reach local AI service. Please verify that Ollama is running.";
+        return '⚠️ Error: Unable to reach local AI service. Please verify that Ollama is running.';
     }
 }
