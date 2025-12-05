@@ -120,7 +120,7 @@ ADMIN_CODE=SecretCodeToRegisterAsAdmin
 # AI Configuration (Ollama)
 AI_PROVIDER=ollama
 AI_MODEL=mistral
-AI_API_URL=[http://127.0.0.1:11434/api/chat](http://127.0.0.1:11434/api/chat)
+AI_API_URL=http://127.0.0.1:11434/api/chat
 
 # Optional System Prompt Override
 # AI_SYSTEM_PROMPT="You are a precise technical assistant..."
