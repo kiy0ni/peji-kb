@@ -61,7 +61,7 @@ export const contentSecurityPolicy = (req, res, next) => {
         "form-action 'self'"                           // Forms: Only allow form submissions to same origin
     ];
 
-    res.setHeader("Content-Security-Policy", cspDirectives.join('; '));
+    res.setHeader('Content-Security-Policy', cspDirectives.join('; '));
 
 
     // ===========================================================================

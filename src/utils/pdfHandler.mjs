@@ -63,7 +63,7 @@ export async function extractPdfText(absolutePath) {
 
         const pdfDocument = await loadingTask.promise;
 
-        let fullText = "";
+        let fullText = '';
         
         // Determine the loop limit (actual pages vs safety limit)
         const pagesToProcess = Math.min(pdfDocument.numPages, MAX_PAGES_TO_SCAN);
@@ -93,14 +93,14 @@ export async function extractPdfText(absolutePath) {
         // If not, the PDF might be an image-only scan or encrypted.
         if (!fullText || fullText.trim().length < MIN_TEXT_THRESHOLD) {
             console.warn(`[PDF WARN] Extracted text is empty or insufficient (${fullText.length} chars).`);
-            return "[SYSTEM] The document appears to be empty, image-based, or protected. Native extraction failed.";
+            return '[SYSTEM] The document appears to be empty, image-based, or protected. Native extraction failed.';
         }
 
         return fullText;
 
     } catch (error) {
         // Log the critical error for debugging purposes
-        console.error("[PDF ERROR] Critical failure in pdfjs-dist:", error);
-        return "[ERROR] Unable to read the PDF file due to an internal error.";
+        console.error('[PDF ERROR] Critical failure in pdfjs-dist:', error);
+        return '[ERROR] Unable to read the PDF file due to an internal error.';
     }
 }

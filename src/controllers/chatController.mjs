@@ -63,7 +63,7 @@ export const getChatHistory = (req, res) => {
         res.json({ messages: rows });
 
     } catch (error) {
-        console.error("[ChatController] Get History Error:", error);
+        console.error('[ChatController] Get History Error:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
@@ -114,13 +114,13 @@ export const postChat = async (req, res) => {
         } catch (aiError) {
             // Fail Gracefully: Log the error but don't crash the request.
             // Return a fallback message to the user.
-            console.error("⚠️ [ChatController] AI Service Failure:", aiError);
-            aiResponseText = "Sorry, the AI service is temporarily unavailable.";
+            console.error('⚠️ [ChatController] AI Service Failure:', aiError);
+            aiResponseText = 'Sorry, the AI service is temporarily unavailable.';
         }
 
         // Safety check for empty AI response
         if (!aiResponseText) {
-            aiResponseText = "The AI returned no response.";
+            aiResponseText = 'The AI returned no response.';
         }
 
         // 5. Persistence: Save Assistant Response
@@ -136,10 +136,10 @@ export const postChat = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("[ChatController] Critical Flow Error:", error);
+        console.error('[ChatController] Critical Flow Error:', error);
         res.status(500).json({ 
             error: 'Server Logic Error', 
-            messages: [{ role: 'assistant', content: "Critical server error occurred." }] 
+            messages: [{ role: 'assistant', content: 'Critical server error occurred.' }] 
         });
     }
 };
@@ -175,7 +175,7 @@ export const deleteChatHistory = (req, res) => {
         res.json({ success: true, deleted: result.changes });
 
     } catch (error) {
-        console.error("[ChatController] Delete History Error:", error);
+        console.error('[ChatController] Delete History Error:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };

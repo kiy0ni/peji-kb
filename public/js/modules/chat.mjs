@@ -231,7 +231,7 @@ export function initChat() {
                     .filter(m => m.role === 'assistant')
                     .forEach(m => renderMessage(m));
             } else {
-                renderMessage({ role: 'assistant', content: "Error: Unable to retrieve a response." });
+                renderMessage({ role: 'assistant', content: 'Error: Unable to retrieve a response.' });
             }
 
         } catch (error) {
@@ -244,7 +244,7 @@ export function initChat() {
             
             // Ensure UI is unlocked even on error
             setLoading(false); 
-            renderMessage({ role: 'assistant', content: "Network error." });
+            renderMessage({ role: 'assistant', content: 'Network error.' });
 
         } finally {
             // Cleanup
@@ -293,7 +293,7 @@ export function initChat() {
     // D. Interaction: Reset Conversation
     if (dom.resetBtn) {
         dom.resetBtn.addEventListener('click', async () => {
-            if (!confirm("Reset conversation?")) return;
+            if (!confirm('Reset conversation?')) return;
             
             try {
                 const res = await fetch(`/api/v1/chat?path=${encodeURIComponent(metaPath)}`, { method: 'DELETE' });

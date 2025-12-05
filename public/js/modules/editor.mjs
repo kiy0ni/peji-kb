@@ -20,58 +20,58 @@
 const TOOLBAR_CONFIG = [
     // --- Group 1: Text Formatting ---
     {
-        name: "bold",
+        name: 'bold',
         action: EasyMDE.toggleBold,
-        className: "ph ph-text-bolder",
-        title: "Bold"
+        className: 'ph ph-text-bolder',
+        title: 'Bold'
     },
     {
-        name: "italic",
+        name: 'italic',
         action: EasyMDE.toggleItalic,
-        className: "ph ph-text-italic",
-        title: "Italic"
+        className: 'ph ph-text-italic',
+        title: 'Italic'
     },
     {
-        name: "heading",
+        name: 'heading',
         action: EasyMDE.toggleHeadingSmaller,
-        className: "ph ph-text-h",
-        title: "Heading"
+        className: 'ph ph-text-h',
+        title: 'Heading'
     },
-    "|", // Separator
+    '|', // Separator
 
     // --- Group 2: Lists & Quotes ---
     {
-        name: "quote",
+        name: 'quote',
         action: EasyMDE.toggleBlockquote,
-        className: "ph ph-quotes",
-        title: "Blockquote"
+        className: 'ph ph-quotes',
+        title: 'Blockquote'
     },
     {
-        name: "unordered-list",
+        name: 'unordered-list',
         action: EasyMDE.toggleUnorderedList,
-        className: "ph ph-list-bullets",
-        title: "Bulleted List"
+        className: 'ph ph-list-bullets',
+        title: 'Bulleted List'
     },
     {
-        name: "ordered-list",
+        name: 'ordered-list',
         action: EasyMDE.toggleOrderedList,
-        className: "ph ph-list-numbers",
-        title: "Numbered List"
+        className: 'ph ph-list-numbers',
+        title: 'Numbered List'
     },
-    "|", // Separator
+    '|', // Separator
 
     // --- Group 3: Utilities ---
     {
-        name: "link",
+        name: 'link',
         action: EasyMDE.drawLink,
-        className: "ph ph-link-simple",
-        title: "Insert Link"
+        className: 'ph ph-link-simple',
+        title: 'Insert Link'
     },
     {
-        name: "preview",
+        name: 'preview',
         action: EasyMDE.togglePreview,
-        className: "no-disable ph ph-eye",
-        title: "Preview"
+        className: 'no-disable ph ph-eye',
+        title: 'Preview'
     }
 ];
 
@@ -94,8 +94,8 @@ export function initEditor() {
     // 3. Editor Initialization
     return new EasyMDE({
         element: noteInputElement,
-        placeholder: "Write your notes here... (Markdown supported)",
-        minHeight: "100%",
+        placeholder: 'Write your notes here... (Markdown supported)',
+        minHeight: '100%',
 
         // Behavior Configuration
         spellChecker: false, // Disabled to prevent browser conflict or performance issues

@@ -37,7 +37,7 @@ if (!fs.existsSync(DATA_DIR)) {
     try {
         fs.mkdirSync(DATA_DIR, { recursive: true });
     } catch (err) {
-        console.error("CRITICAL: Failed to create data directory.", err);
+        console.error('CRITICAL: Failed to create data directory.', err);
         process.exit(1);
     }
 }
@@ -209,14 +209,14 @@ export function initDB() {
     // 1. Migration Logic (Legacy Detection)
     try {
         // Check schema of an existing table
-        const tableInfo = db.prepare("PRAGMA table_info(favorites)").all();
+        const tableInfo = db.prepare('PRAGMA table_info(favorites)').all();
         
         // Detect if we are on the old single-user schema
         const hasUserId = tableInfo.some(col => col.name === 'user_id');
         
         // If table exists but lacks 'user_id', we must migrate
         if (tableInfo.length > 0 && !hasUserId) {
-            console.warn("⚠️  [DB INIT] Schema mismatch detected (Legacy Version). Performing destructive migration...");
+            console.warn('⚠️  [DB INIT] Schema mismatch detected (Legacy Version). Performing destructive migration...');
             
             // Drop tables that require structural changes
             const dropQuery = `
@@ -226,17 +226,17 @@ export function initDB() {
                 DROP TABLE IF EXISTS users;
             `;
             db.exec(dropQuery);
-            console.warn("⚠️  [DB INIT] Legacy tables dropped. Rebuilding schema...");
+            console.warn('⚠️  [DB INIT] Legacy tables dropped. Rebuilding schema...');
         }
     } catch (error) {
-        console.error("❌ [DB INIT] Migration check failed:", error);
+        console.error('❌ [DB INIT] Migration check failed:', error);
     }
 
     // 2. Execute Schema Creation
     // This is safe to run every time due to "IF NOT EXISTS" clauses
     db.exec(schema);
 
-    console.log("✅ [DB INIT] Database initialized & Schema verified.");
+    console.log('✅ [DB INIT] Database initialized & Schema verified.');
 }
 
 // Export the database instance for use in controllers/services
