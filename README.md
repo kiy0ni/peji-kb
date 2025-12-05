@@ -72,7 +72,7 @@ It is built to allow students and developers to centralize PDF course materials,
 1.  **Clone the repository**
 
     ```bash
-    git clone [https://github.com/your-org/peji-kb.git](https://github.com/your-org/peji-kb.git)
+    git clone https://github.com/your-org/peji-kb.git
     cd peji-kb
     ```
 
