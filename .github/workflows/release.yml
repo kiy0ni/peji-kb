@@ -1,0 +1,103 @@
+name: Production Release & Versioning
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Semantic Versioning Bump'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch # v1.0.0 -> v1.0.1 (Bug fix / Hotfix)
+          - minor # v1.0.0 -> v1.1.0 (New feature)
+          - major # v1.0.0 -> v2.0.0 (Breaking change)
+      source_branch:
+        description: 'Source Branch (e.g., "develop" for releases, "hotfix/xyz" for fixes)'
+        required: true
+        default: 'develop'
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release:
+    name: Release & Sync (${{ inputs.release_type }})
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Initialization
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history is required for merges and changelogs
+          token: ${{ secrets.ADMIN_TOKEN }}
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Configure Git Identity
+        run: |
+          git config user.name "kiy0ni CI"
+          git config user.email "sachapastor34@gmail.com"
+
+      # 2. Merge Logic (Handles both Develop -> Main AND Hotfix -> Main)
+      - name: Merge Source into Main
+        run: |
+          echo "🚀 Preparing to release from source: ${{ inputs.source_branch }}"
+
+          # Switch to main and ensure it's up to date
+          git checkout main
+          git pull origin main
+
+          # Fetch the source branch (develop or hotfix/...)
+          git fetch origin ${{ inputs.source_branch }}
+
+          # Merge source into main
+          # --no-ff ensures a merge commit is created for traceability
+          git merge origin/${{ inputs.source_branch }} --no-ff -m "chore(release): merge ${{ inputs.source_branch }} into main"
+
+      # 3. Versioning (Updates package.json, creates commit & tag)
+      - name: Bump Version
+        id: version
+        run: |
+          # Apply semantic versioning
+          npm version ${{ inputs.release_type }} -m "chore(release): bump version to %s"
+
+          # Extract new version for output variables
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "version=v$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "✅ New Version: v$NEW_VERSION"
+
+      # 4. Persistence (Push to Main)
+      - name: Push to Main & Tags
+        run: |
+          git push origin main --follow-tags
+
+      # 5. GitHub Release Generation
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: Release ${{ steps.version.outputs.version }}
+          generate_release_notes: true # Auto-generates changelog from Pull Requests
+          make_latest: true
+
+      # 6. Synchronization (Back-merge to Develop)
+      # Critical step: Ensure 'develop' gets the new version number and the hotfix code.
+      - name: Sync Back to Develop
+        run: |
+          echo "🔄 Syncing new version back to develop..."
+
+          git checkout develop
+          git pull origin develop
+
+          # Merge main (which now has the new version/tag) back into develop
+          git merge main
+
+          git push origin develop
