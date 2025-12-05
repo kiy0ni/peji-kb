@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+    <meta name="csrf-token" content="<%= csrfToken %>" />
+  <% } %>
+
+  <title>
+    <%= (typeof title !== 'undefined' && title) ? title + ' | ' : '' %><%= appName %>
+  </title>
+
+  <link rel="stylesheet" href="/public/fonts/inter/inter.css">
+  <link rel="stylesheet" href="/public/vendor/phosphor/styles.css">
+  <link rel="stylesheet" href="/public/vendor/easymde/easymde.min.css">
+  
+  <script src="/public/vendor/easymde/easymde.min.js"></script>
+
+  <link rel="stylesheet" href="/public/css/style.css" />
+</head>
+
+<body>
+  <div class="app
+       <%= (typeof showTree !== 'undefined' && showTree) ? 'has-context' : '' %>
+       <%= (typeof isReaderMode !== 'undefined' && isReaderMode) ? 'is-reader' : '' %>
+  ">
+
+    <%- include('partials/navRail') %>
+
+    <% if (typeof showTree !== 'undefined' && showTree) { %>
+      <aside class="context-sidebar">
+        <div class="context-header">
+          <h2 class="context-title"><%= contextTitle || 'Explorer' %></h2>
+          <% if (typeof currentPath !== 'undefined' && currentPath !== 'courses') { %>
+            <a href="/browse" class="back-link"><i class="ph ph-arrow-left"></i> Back</a>
+          <% } %>
+        </div>
+
+        <div class="tree-wrapper">
+          <% if (typeof favorites !== 'undefined' && favorites.length > 0) { %>
+            <div class="fav-list">
+              <div class="fav-title">Favorites</div>
+              <% favorites.forEach(fav => { %>
+                <a href="/file/<%= fav.path %>" class="fav-item">
+                  <i class="ph ph-star"></i> <span><%= fav.title || 'Document' %></span>
+                </a>
+              <% }) %>
+            </div>
+          <% } %>
+
+          <% if (tree) { %>
+            <%
+              // Determine if the current tree structure is the root level ('courses')
+              const isRoot = tree.name === 'courses' || tree.path === 'courses';
+            %>
+            <% if (isRoot) { %>
+                <% (tree.children || []).forEach(child => { %>
+                    <%- include('partials/sidebarNode', { node: child }) %>
+                <% }) %>
+            <% } else { %>
+                <div class="tree-context-header" style="padding: 0 12px 8px; font-size: 13px; font-weight: 600; color: var(--text-main); display:flex; align-items:center; gap:8px;">
+                   <i class="ph ph-folder-open" style="color:var(--accent-primary)"></i> <%= tree.name %>
+                </div>
+                <% (tree.children || []).forEach(child => { %>
+                    <%- include('partials/sidebarNode', { node: child }) %>
+                <% }) %>
+            <% } %>
+          <% } else { %>
+            <div class="tree-empty">Empty folder.</div>
+          <% } %>
+        </div>
+      </aside>
+    <% } %>
+
+    <main class="main">
+      <% if (typeof isReaderMode !== 'undefined' && isReaderMode) { %>
+        <%- include(page) %>
+      <% } else { %>
+        <div class="main-content-wrapper">
+          <%- include('partials/breadcrumbs', { breadcrumbs }) %>
+          <%- include(page) %>
+        </div>
+      <% } %>
+    </main>
+
+    <% if (typeof isReaderMode !== 'undefined' && isReaderMode) { %>
+      <aside class="tools-panel" id="toolsPanel">
+
+         <div class="tools-header">
+           <button class="tools-tab active" data-tab="notes">Notes</button>
+           <button class="tools-tab" data-tab="snippets">Snippets</button>
+           <button class="tools-tab" data-tab="ai">AI Chat</button>
+         </div>
+
+         <div class="tools-content">
+           
+           <div class="note-editor-container active" id="tab-notes">
+             <textarea id="noteInput"></textarea>
+             <div class="save-status" id="saveStatus">Ready</div>
+           </div>
+
+           <div class="snippets-container" id="tab-snippets">
+             <div class="snippet-creator">
+               <textarea class="snippet-input" id="newSnippetCode" placeholder="Paste your code or text here..."></textarea>
+               <button class="btn-small" id="btnAddSnippet">Add</button>
+             </div>
+             <div class="snippet-list" id="snippetList"></div>
+           </div>
+
+           <div class="ai-chat-container" id="tab-ai">
+             <div class="chat-history" id="chatHistory">
+                <div class="chat-empty-state">
+                    <i class="ph ph-robot" style="font-size: 24px; color: var(--text-light); margin-bottom: 8px;"></i>
+                    <p style="font-size: 13px; color: var(--text-muted);">Chat about this document.</p>
+                </div>
+             </div>
+
+             <div class="chat-loading" id="chatLoading" hidden>
+                <div class="typing-indicator"><span></span><span></span><span></span></div>
+                <span>AI is thinking...</span>
+             </div>
+
+             <div class="chat-input-area">
+               <button id="chatReset" class="chat-reset" title="Reset Conversation" style="margin-right:8px;">
+                 <i class="ph ph-trash"></i>
+               </button>
+               <textarea id="chatInput" class="chat-input" rows="1" placeholder="Ask a question..."></textarea>
+               <button id="chatSend" class="chat-send" title="Send">
+                 <i class="ph ph-paper-plane-right"></i>
+               </button>
+             </div>
+           </div>
+
+         </div>
+      </aside>
+    <% } %>
+
+  </div>
+
+  <script type="module" src="/public/js/main.mjs" nonce="<%= typeof scriptNonce !== 'undefined' ? scriptNonce : '' %>"></script>
+</body>
+</html>

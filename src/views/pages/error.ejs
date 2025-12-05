@@ -1,0 +1,41 @@
+<%
+  // ==============================================================================
+  // VIEW: GENERIC ERROR PAGE
+  // ==============================================================================
+  /**
+   * @fileoverview Renders a standardized error interface for various HTTP error states
+   * (e.g., 404 Not Found, 500 Internal Server Error, 403 Forbidden).
+   *
+   * @param {string} [message] - Specific error description passed from the backend controller.
+   * If not provided, a generic fallback message is displayed.
+   */
+  // ==============================================================================
+%>
+
+<div class="file-view">
+  <div class="file-box error-container" role="alert">
+
+    <i class="ph ph-warning-circle error-icon" aria-hidden="true"></i>
+
+    <h1 class="error-title">Oops!</h1>
+
+    <p class="error-text">
+      <%
+         // ==================================================================
+         // LOGIC: ERROR MESSAGE FALLBACK
+         // ==================================================================
+         // Check if a specific message was passed from the server.
+         // If undefined or empty, default to a generic user-friendly message.
+         const displayMessage = (typeof message !== 'undefined' && message)
+            ? message
+            : 'An unexpected error occurred.';
+      %>
+      <%= displayMessage %>
+    </p>
+
+    <a href="/" class="btn-primary btn-home">
+      Back to Home
+    </a>
+
+  </div>
+</div>

@@ -1,0 +1,215 @@
+<%
+  // ==============================================================================
+  // PAGE: SETTINGS / USER CONFIGURATION HUB
+  // ==============================================================================
+  /**
+   * @fileoverview Renders the user's main settings page, combining profile information
+   * with developer tools (API Keys and Webhooks management).
+   *
+   * @param {Object} user - The authenticated user object (must contain username and role).
+   * @param {Array<Object>} [apiKeys] - List of API key objects for the user.
+   * @param {Array<Object>} [webhooks] - List of webhook subscription objects for the user.
+   * @param {string} [lastCreatedKey] - The newly generated API key, shown only once.
+   * @param {string} [csrfToken] - CSRF token required for all POST requests.
+   * @param {string} [scriptNonce] - Nonce value for Content Security Policy.
+   */
+  // ==============================================================================
+%>
+
+<div class="page-header is-centered">
+  <h1 class="page-title">Settings</h1>
+</div>
+
+<div class="card-grid settings-grid">
+
+  <section class="kb-card-wrapper profile-wrapper">
+    <div class="admin-card profile-card-inner">
+
+      <div class="profile-header">
+        <div class="profile-avatar">
+          <%= user.username.charAt(0).toUpperCase() %>
+        </div>
+
+        <div class="profile-info">
+          <h2><%= user.username %></h2>
+          <span class="badge soft">
+            <%= user.role === 'admin' ? 'Administrator' : 'Student' %>
+          </span>
+        </div>
+      </div>
+
+      <div class="profile-details">
+        <div class="profile-row bordered">
+          <span class="profile-label">Username</span>
+          <span class="profile-value"><%= user.username %></span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-label">Password</span>
+          <span class="profile-value">••••••••</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <% if (user.role === 'admin') { %>
+    <a href="/admin" class="kb-card-wrapper">
+      <div class="admin-card admin-link-card">
+
+        <div class="admin-link-header">
+          <i class="ph ph-shield-check admin-icon-shield"></i> <h2 class="admin-link-title">Admin Panel</h2>
+        </div>
+
+        <p class="admin-link-desc">
+          Manage files and the organization of the knowledge base.
+        </p>
+
+        <div class="admin-link-cta">
+          Access <i class="ph-bold ph-arrow-right"></i> </div>
+
+      </div>
+    </a>
+  <% } %>
+
+
+  <div class="dev-tools-grid">
+
+      <% if (typeof lastCreatedKey !== 'undefined' && lastCreatedKey) { %>
+        <div class="kb-card-wrapper">
+          <div class="admin-card dev-card-inner">
+            <h2>New API Key Created</h2>
+            <p class="dev-card-desc">This key is shown only once. **Copy and store it securely.**</p>
+            <div class="api-key-reveal"><code><%= lastCreatedKey %></code></div>
+          </div>
+        </div>
+      <% } %>
+
+    <section class="kb-card-wrapper api-keys-wrapper">
+      <div class="admin-card dev-card-inner">
+        <h2>API Keys <i class="ph ph-key"></i></h2> <p class="dev-card-desc">Manage your REST API access tokens. Scopes: read:all, write:self, admin:all.</p>
+
+        <div class="table-scroll">
+          <table class="table dev-table">
+            <thead>
+              <tr>
+                <th>Label</th>
+                <th>Scopes</th>
+                <th>Active</th>
+                <th>Last Used</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <%# Iterate over the list of API keys. Use empty array fallback. %>
+              <% (apiKeys || []).forEach(k => { %>
+                <tr>
+                  <td>
+                    <%= k.label || '-' %>
+                    <% if (k.key_prefix) { %>
+                      <span class="form-hint">(<%= k.key_prefix %>…)</span> <% } %>
+                  </td>
+                  <td><%= k.scopes %></td>
+                  <td><%= k.active ? 'yes' : 'no' %></td>
+                  <td><%= k.last_used || '-' %></td>
+                  <td>
+                    <% if (k.active) { %>
+                      <form method="post" action="/settings/keys/<%= k.id %>/revoke" style="display:inline" class="form-revoke-key">
+                        <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                          <input type="hidden" name="_csrf" value="<%- csrfToken %>">
+                        <% } %>
+                        <button type="submit" class="btn-secondary btn-sm">Revoke</button>
+                      </form>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+
+        <form method="post" action="/settings/keys" class="dev-form">
+          <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+            <input type="hidden" name="_csrf" value="<%- csrfToken %>">
+          <% } %>
+          <input type="text" name="label" placeholder="Label" required />
+          <input type="text" name="scopes" placeholder="Scopes (e.g., read:all write:self)" required />
+          <button type="submit" class="btn-primary btn-sm">Create Key</button>
+        </form>
+      </div>
+    </section>
+
+    <section class="kb-card-wrapper webhooks-wrapper">
+      <div class="admin-card dev-card-inner">
+        <h2>Webhooks <i class="ph ph-bell-ringing"></i></h2> <p class="dev-card-desc">Receive signed events from your activity in the app (e.g., favorite.added, note.updated).</p>
+
+        <div class="table-scroll">
+          <table class="table dev-table">
+            <thead>
+              <tr>
+                <th>URL</th>
+                <th>Events</th>
+                <th>Active</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <%# Iterate over the list of webhooks. Use empty array fallback. %>
+              <% (webhooks || []).forEach(h => { %>
+                <tr>
+                  <td><%= h.url %></td>
+                  <td><%= h.events %></td>
+                  <td><%= h.active ? 'yes' : 'no' %></td>
+                  <td>
+                    <form method="post" action="/settings/webhooks/<%= h.id %>/delete" style="display:inline" class="form-delete-webhook">
+                      <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                        <input type="hidden" name="_csrf" value="<%- csrfToken %>">
+                      <% } %>
+                      <button type="submit" class="btn-secondary btn-sm">Delete</button>
+                    </form>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+
+        <form method="post" action="/settings/webhooks" class="dev-form">
+          <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+            <input type="hidden" name="_csrf" value="<%- csrfToken %>">
+          <% } %>
+          <input type="url" name="url" placeholder="https://endpoint.example/webhook" required />
+          <input type="text" name="secret" placeholder="Shared secret" required />
+          <input type="text" name="events" placeholder="Comma-separated events (e.g., favorite.added)" required />
+          <button type="submit" class="btn-primary btn-sm">Add Webhook</button>
+        </form>
+      </div>
+    </section>
+  </div>
+
+  <a href="/logout" class="btn-primary btn-logout">
+    Logout
+  </a>
+
+</div>
+
+<script nonce="<%= scriptNonce %>">
+  (function() {
+    // --- 5.1. Revoke Key Confirmation ---
+    // Attaches a 'submit' event listener to all revoke key forms to display a confirmation dialog.
+    document.querySelectorAll('.form-revoke-key').forEach(f => {
+      f.addEventListener('submit', (e) => {
+        // Prevent submission if the user clicks 'Cancel'
+        if (!confirm('Are you sure you want to revoke this API key?')) e.preventDefault();
+      });
+    });
+
+    // --- 5.2. Delete Webhook Confirmation ---
+    // Attaches a 'submit' event listener to all delete webhook forms to display a confirmation dialog.
+    document.querySelectorAll('.form-delete-webhook').forEach(f => {
+      f.addEventListener('submit', (e) => {
+        // Prevent submission if the user clicks 'Cancel'
+        if (!confirm('Are you sure you want to delete this webhook?')) e.preventDefault();
+      });
+    });
+  })();
+</script>

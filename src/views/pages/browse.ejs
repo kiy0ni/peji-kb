@@ -1,0 +1,122 @@
+<%
+  // ==============================================================================
+  // PAGE: BROWSE / CATALOG
+  // ==============================================================================
+  /**
+   * @fileoverview The main navigation view for listing courses, folders, and documents
+   * within a specific category or directory.
+   *
+   * @param {string} title - The display title of the current view/category.
+   * @param {string} [currentPath] - The current URL path, used to highlight active filter chips.
+   * @param {Array<Object>} [categories] - List of sibling categories/folders to display as navigation chips.
+   * @param {Array<Object>} [cards] - The main content items (files or subfolders) to be displayed in the grid.
+   * @param {Array<Object>} [favorites] - List of user favorites (often displayed prominently on mobile).
+   */
+  // ==============================================================================
+%>
+
+<header class="page-header">
+  <div class="header-top">
+    <h1 class="page-title"><%= title %></h1>
+  </div>
+
+  <div class="chips">
+    <% (categories || []).forEach(cat => { %>
+      <%
+        // Determine if this category chip represents the current active path.
+        // Uses simple string inclusion check.
+        const isActive = (currentPath && currentPath.includes(cat.path));
+      %>
+      <a class="chip <%= isActive ? 'is-active' : '' %>"
+         href="/browse/<%= cat.path %>">
+        <%= cat.label %>
+      </a>
+    <% }) %>
+  </div>
+</header>
+
+
+<% if (typeof favorites !== 'undefined' && favorites.length > 0) { %>
+  <section class="mobile-favorites">
+
+    <div class="fav-header">
+      <i class="ph ph-star" style="color: #f59e0b;"></i>
+      <span>Favorites</span>
+    </div>
+
+    <div class="fav-scroll">
+      <% favorites.forEach(fav => { %>
+        <a href="/file/<%= fav.path %>" class="fav-chip">
+          <%= fav.title || 'Document' %>
+        </a>
+      <% }) %>
+    </div>
+
+  </section>
+<% } %>
+
+
+<section class="card-grid">
+
+  <% if (!cards || cards.length === 0) { %>
+    <div class="empty-state">
+      <i class="ph ph-ghost" style="font-size: 32px; color: var(--text-light);"></i>
+      <p>No content found here.</p>
+    </div>
+  <% } %>
+
+  <% (cards || []).forEach(card => { %>
+    <%
+      // ==================================================================
+      // LOGIC: ITEM TYPE & ROUTING
+      // ==================================================================
+
+      // 1. Detect if the item is a PDF file based on extension or explicit type
+      const isPdf = (card.path && card.path.toLowerCase().endsWith('.pdf')) || card.type === 'pdf';
+
+      // 2. Generate appropriate link
+      // - Files -> /file/ (Reader View)
+      // - Folders -> /browse/ (Catalog View)
+      const link = isPdf
+          ? `/file/${card.path}`
+          : `/browse/${card.path}`;
+
+      // 3. Select UI Assets (Icons and Labels)
+      const iconClass = isPdf ? 'ph-file-pdf' : 'ph-folder-open';
+      const typeLabel = isPdf ? 'PDF' : 'Folder';
+    %>
+
+    <a href="<%= link %>" class="kb-card-wrapper">
+      <article class="kb-card tone-<%= card.tone || 'lavender' %>">
+
+        <div class="kb-card__visual">
+           <div class="illustration-placeholder"></div>
+
+           <div class="kb-card__tags">
+             <% if (card.category && card.category !== 'general') { %>
+               <span class="badge"><%= card.category %></span>
+             <% } %>
+           </div>
+        </div>
+
+        <div class="kb-card__content">
+          <h3 class="kb-card__title"><%= card.title %></h3>
+
+          <footer class="kb-card__footer">
+
+            <div class="meta-item">
+               <i class="ph <%= iconClass %>"></i> <%= typeLabel %>
+            </div>
+
+            <div class="meta-item action-icon">
+              <i class="ph-bold ph-arrow-right"></i>
+            </div>
+
+          </footer>
+        </div>
+
+      </article>
+    </a>
+  <% }) %>
+
+</section>

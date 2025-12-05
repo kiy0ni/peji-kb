@@ -1,0 +1,52 @@
+name: Node.js CI
+
+# Triggers the workflow on push and pull request events to main and develop branches.
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  quality-check:
+    name: Build, Lint & Test
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x] # Testing against LTS versions as per README (v18+)
+
+    # Environment variables required for application boot and test configuration.
+    env:
+      NODE_ENV: test
+      PORT: 3000
+      SESSION_SECRET: "ci-secret-key-placeholder"
+      ADMIN_CODE: "admin-ci-test"
+      AI_PROVIDER: "ollama" 
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      # 'npm ci' is recommended over 'npm install' in CI environments
+      run: npm ci
+
+    # VERIFICATION 1: Linting (Code Style Check)
+    - name: Run Linter
+      run: npm run lint
+
+    # VERIFICATION 2: Unit & Integration Tests
+    - name: Run Tests
+      run: npm test
+      
+    # (Optional) Security check for dependencies
+    - name: Audit Dependencies
+      run: npm audit --audit-level=high
+      continue-on-error: true # Set to true to avoid blocking PRs on minor issues

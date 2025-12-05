@@ -1,0 +1,60 @@
+<%
+  // ==============================================================================
+  // COMPONENT: PDF READER VIEW
+  // ==============================================================================
+  /**
+   * @fileoverview Renders the specialized interface for viewing PDF files.
+   * It includes a custom toolbar for application-specific actions (Zen mode, AI Tools)
+   * and embeds the native browser PDF viewer via an iframe.
+   *
+   * @param {string} title - The display title of the document.
+   * @param {string} rawUrl - The direct URL to the static PDF file.
+   * @param {string} filePath - The logical path of the file (for API operations).
+   * @param {string} contextTitle - The category or folder name (context).
+   * @param {boolean} isFav - Boolean flag indicating if the file is in user favorites.
+   * @param {string} [scriptNonce] - Security nonce for inline scripts (CSP).
+   */
+  // ==============================================================================
+%>
+
+<div class="pdf-container">
+
+  <div class="reader-toolbar">
+
+    <div class="reader-actions">
+       <button class="btn-icon" id="btnToggleNav" title="Toggle Navigation">
+         <i class="ph ph-list"></i>
+       </button>
+
+       <span class="reader-title"><%= title %></span>
+    </div>
+
+    <div class="reader-actions">
+
+      <button class="btn-icon <%= isFav ? 'is-fav' : '' %>" id="btnFav" title="Toggle Favorite">
+        <i class="<%= isFav ? 'ph ph-star' : 'ph ph-star' %>"></i>
+      </button>
+
+      <button class="btn-icon" id="btnZen" title="Zen Mode">
+        <i class="ph ph-arrows-out-simple"></i>
+      </button>
+
+      <button class="btn-icon active" id="btnTools" title="Toggle Tools">
+        <i class="ph ph-sidebar-simple"></i>
+      </button>
+
+    </div>
+  </div>
+
+  <iframe src="<%= rawUrl %>#toolbar=0&view=FitH" class="pdf-frame" id="pdfFrame"></iframe>
+
+</div>
+
+<input type="hidden" id="meta-title" value="<%= title %>">
+<input type="hidden" id="meta-path" value="<%= filePath %>">
+<input type="hidden" id="meta-category" value="<%= contextTitle %>">
+
+<script nonce="<%= (typeof scriptNonce !== 'undefined') ? scriptNonce : '' %>">
+  // Note: All interactive logic for this view is handled by 'main.mjs'.
+  // No inline JavaScript logic is placed here to maintain strict CSP compliance.
+</script>

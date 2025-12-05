@@ -1,0 +1,134 @@
+<%
+  // ==============================================================================
+  // PAGE: DASHBOARD (HOME)
+  // ==============================================================================
+  /**
+   * @fileoverview The main landing page for authenticated users.
+   * It displays a high-level overview of activity, reading history, and content suggestions.
+   *
+   * @param {Object} user - The authenticated user object (contains username).
+   * @param {Object} stats - User statistics (coursesRead, readingTimeLabel, productivity).
+   * @param {Array<Object>} [categories] - List of available topic categories for quick filtering.
+   * @param {Array<Object>} [cards] - List of suggested items (courses or folders) to display in the grid.
+   */
+  // ==============================================================================
+%>
+
+<section class="hero-section">
+  <div class="hero-bg-pattern"></div>
+
+  <div class="hero-content">
+      <h1 class="hero-title">Hello <%= (user && user.username) ? user.username : 'there' %>,</h1>
+      <p class="hero-subtitle">Ready to continue learning? Here is an overview of your recent activity (last 30 days).</p>
+
+    <div class="stats-row">
+
+      <div class="stat-card">
+        <span class="stat-value" rcc-amount="" rcc-currency="">
+          <%= (stats && stats.coursesRead) || 0 %>
+        </span>
+        <span class="stat-label">Courses Read</span>
+      </div>
+
+      <div class="stat-card">
+        <span class="stat-value">
+          <%= (stats && stats.readingTimeLabel) || '0m' %>
+        </span>
+        <span class="stat-label">Reading Time</span>
+      </div>
+
+      <div class="stat-card">
+        <span class="stat-value">
+          <%= (stats && stats.productivity != null) ? stats.productivity + '%' : '0%' %>
+        </span>
+        <span class="stat-label">Productivity</span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<section class="dashboard-section" id="historySection" style="display:none;">
+  <div class="section-header">
+    <h2 class="section-title">
+      <i class="ph ph-clock-counter-clockwise"></i> Continue Reading
+    </h2>
+    <a href="#" class="section-link">View History</a>
+  </div>
+
+  <div class="history-scroll" id="historyGrid">
+    </div>
+</section>
+
+
+<section class="dashboard-section">
+
+  <div class="section-header">
+    <h2 class="section-title">
+      <i class="ph ph-compass"></i> Explore by Category
+    </h2>
+    <a href="/browse" class="section-link">Full Catalog</a>
+  </div>
+
+  <div class="chips" style="margin-bottom: 24px;">
+    <% (categories || []).forEach(cat => { %>
+      <a class="chip" href="/browse?path=<%= encodeURIComponent(cat.path) %>">
+        <%= cat.label %>
+      </a>
+    <% }) %>
+  </div>
+
+  <div class="card-grid">
+    <% (cards || []).forEach(card => { %>
+
+      <%
+        // ==================================================================
+        // LOGIC: CARD TYPE DETECTION & ROUTING
+        // ==================================================================
+        // Determine if the item is a PDF file or a Folder to assign the correct link and icon.
+
+        // 1. Detect Type
+        const isPdf = (card.path && card.path.toLowerCase().endsWith('.pdf')) || card.type === 'pdf';
+
+        // 2. Define Target Link
+        // - Files open in the reader view: /file/...
+        // - Folders open in the browser view: /browse/...
+        const link = isPdf
+            ? `/file/${card.path}`
+            : `/browse/${card.path}`;
+
+        // 3. Define UI Assets
+        const iconClass = isPdf ? 'ph-file-pdf' : 'ph-folder-open';
+        const typeLabel = isPdf ? 'PDF' : 'Folder';
+      %>
+
+      <a href="<%= link %>" class="kb-card-wrapper">
+        <article class="kb-card tone-<%= card.tone %>">
+
+          <div class="kb-card__visual">
+             <div class="kb-card__tags">
+               <span class="badge soft"><%= card.category %></span>
+             </div>
+          </div>
+
+          <div class="kb-card__content">
+            <h3 class="kb-card__title"><%= card.title %></h3>
+
+            <footer class="kb-card__footer">
+               <div class="meta-item">
+                 <i class="ph <%= iconClass %>"></i> <%= typeLabel %>
+               </div>
+               <div class="action-icon">
+                 <i class="ph-bold ph-arrow-right"></i>
+               </div>
+            </footer>
+          </div>
+
+        </article>
+      </a>
+
+    <% }) %>
+  </div>
+
+</section>

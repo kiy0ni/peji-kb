@@ -1,0 +1,84 @@
+<%
+  // ==============================================================================
+  // VIEW: REGISTRATION PAGE
+  // ==============================================================================
+  /**
+   * @fileoverview Renders the user registration form.
+   * This view handles the collection of username, password, and optional admin secrets.
+   *
+   * @param {string} appName - The global name of the application.
+   * @param {string|null} error - Error message string to display if a previous attempt failed.
+   * @param {string} [csrfToken] - Security token required for the POST request.
+   */
+  // ==============================================================================
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Sign Up | <%= appName %></title>
+
+  <link rel="stylesheet" href="/public/fonts/inter/inter.css" />
+
+  <link rel="stylesheet" href="/public/css/style.css" />
+</head>
+<body>
+
+  <div class="auth-container">
+    <div class="auth-card">
+
+      <div class="auth-logo">
+        <svg width="48" height="48" viewBox="0 0 40 40" fill="none">
+           <rect width="18" height="18" rx="5" fill="#A78BFA"/>
+           <rect x="22" width="18" height="18" rx="5" fill="#F472B6"/>
+           <rect y="22" width="18" height="18" rx="5" fill="#34D399"/>
+           <rect x="22" y="22" width="18" height="18" rx="5" fill="#60A5FA"/>
+        </svg>
+      </div>
+
+      <h1 class="auth-title">Create Account</h1>
+      <p class="auth-subtitle">Join the collaborative learning platform.</p>
+
+      <% if (error) { %>
+        <div class="auth-error" role="alert">
+          <%= error %>
+        </div>
+      <% } %>
+
+      <form action="/register" method="POST" class="auth-form">
+
+        <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+          <input type="hidden" name="_csrf" value="<%- csrfToken %>">
+        <% } %>
+
+        <div class="form-group">
+          <label class="form-label" for="username">Username</label>
+          <input type="text" id="username" name="username" class="form-input" required autocomplete="username">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input type="password" id="password" name="password" class="form-input" required autocomplete="new-password">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="adminSecret">Admin Code (Optional)</label>
+          <input type="text" id="adminSecret" name="adminSecret" class="form-input" placeholder="Leave empty if student" autocomplete="off">
+        </div>
+
+        <button type="submit" class="btn-primary">Sign Up</button>
+
+      </form>
+
+      <div class="auth-footer">
+        Already have an account? <a href="/login" class="auth-link">Login</a>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>
