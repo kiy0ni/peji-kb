@@ -1,0 +1,290 @@
+<%
+  // ==============================================================================
+  // PAGE: ADMIN PANEL
+  // ==============================================================================
+  /**
+   * @fileoverview The centralized administrative interface.
+   * Allows authorized personnel (Admins) to:
+   * 1. Upload new course content (PDFs) and manage folders.
+   * 2. Manage users (View details, Delete accounts).
+   * 3. Manage Developer Tools for specific users (API Keys, Webhooks).
+   *
+   * @param {Array<Object>} categories - List of existing content folders.
+   * @param {string} [success] - Success message from backend redirect.
+   * @param {string} [error] - Error message from backend redirect.
+   * @param {Array<Object>} [users] - List of all registered users (for selection).
+   * @param {Object} [selectedUser] - The currently selected user object for management.
+   * @param {Array<Object>} [userKeys] - API keys belonging to the selected user.
+   * @param {Array<Object>} [userWebhooks] - Webhooks belonging to the selected user.
+   * @param {string} csrfToken - Security token for forms.
+   * @param {string} scriptNonce - CSP nonce for inline scripts.
+   */
+  // ==============================================================================
+%>
+
+<div class="admin-header admin-page-header">
+  <h1>Admin Panel</h1>
+  <p>Manage content, users, API keys, and webhooks.</p>
+</div>
+
+<% if (typeof success !== 'undefined' && success) { %>
+  <div class="alert-box alert-success" role="alert">
+    <%= success %>
+  </div>
+<% } %>
+
+<% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert-box alert-error" role="alert">
+    <%= error %>
+  </div>
+<% } %>
+
+
+<section class="admin-card">
+
+  <h2 class="section-title">
+    <i class="ph ph-upload-simple"></i> Upload Course (PDF)
+  </h2>
+
+  <form action="/admin/upload?_csrf=<%- csrfToken %>" method="POST" enctype="multipart/form-data" class="auth-form">
+    <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+      <input type="hidden" name="_csrf" value="<%- csrfToken %>">
+    <% } %>
+
+    <div class="form-group">
+      <label class="form-label" for="categorySelect">Destination Folder</label>
+      <select name="category" id="categorySelect" class="form-input" required>
+        <option value="" disabled selected>-- Select a folder --</option>
+
+        <% categories.forEach(cat => { %>
+          <option value="<%= cat.key %>"><%= cat.label %></option>
+        <% }) %>
+
+        <option value="new" class="option-create-new">+ Create new folder...</option>
+      </select>
+    </div>
+
+    <div class="form-group" id="newCategoryGroup" style="display:none;">
+        <label class="form-label" for="newCategoryName">New Folder Name</label>
+        <input type="text" name="newCategoryName" id="newCategoryName" class="form-input" placeholder="Ex: React, Marketing, Cybersecurity...">
+        <p class="form-hint">Only alphanumeric characters are allowed.</p>
+    </div>
+
+    <div class="form-group">
+        <label class="form-label">PDF File</label>
+
+        <div class="upload-zone" id="uploadZone">
+            <i class="ph ph-file-pdf upload-icon"></i>
+            <p>Click to select a PDF</p>
+
+            <input type="file"
+                   id="fileInput"
+                   name="coursePdf"
+                   accept="application/pdf"
+                   class="hidden-file-input"
+                   required>
+        </div>
+    </div>
+
+    <button type="submit" class="btn-primary">Publish Course</button>
+
+  </form>
+</section>
+
+
+<section class="admin-card admin-manage-users" style="margin-top:24px;">
+
+  <h2 class="section-title"><i class="ph ph-users"></i> Manage Users</h2>
+  <p>Select a user to view and manage their API keys and webhooks.</p>
+
+  <div class="form-group">
+    <form method="get" action="/admin" class="dev-form" id="userSelectForm">
+      <select name="userId" class="form-input" aria-label="Select User">
+        <% (users || []).forEach(u => { %>
+          <option value="<%= u.id %>" <%= selectedUser && selectedUser.id === u.id ? 'selected' : '' %>>
+            <%= u.username %> (#<%= u.id %>) - <%= u.role %>
+          </option>
+        <% }) %>
+      </select>
+      <noscript><button type="submit" class="btn-secondary btn-sm">Load</button></noscript>
+    </form>
+  </div>
+
+  <% if (selectedUser) { %>
+
+    <form method="post" action="/admin/users/<%= selectedUser.id %>/delete" style="margin-top: 10px;" id="deleteUserForm">
+      <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+        <input type="hidden" name="_csrf" value="<%- csrfToken %>">
+      <% } %>
+      <button type="submit" class="btn-secondary btn-sm" style="background-color: #fee2e2; color: #991b1b; border: 1px solid #f87171;">
+        <i class="ph ph-trash"></i> Delete User & Data
+      </button>
+    </form>
+
+
+    <div class="admin-card" style="margin-top:16px;">
+      <h3 class="section-title"><i class="ph ph-key"></i> API Keys for <%= selectedUser.username %></h3>
+
+      <div class="table-scroll">
+        <table class="table dev-table">
+          <thead><tr><th>ID</th><th>Label</th><th>Scopes</th><th>Active</th><th>Last Used</th><th>Actions</th></tr></thead>
+          <tbody>
+            <% (userKeys || []).forEach(k => { %>
+              <tr>
+                <td><%= k.id %></td>
+                <td>
+                  <%= k.label || '-' %>
+                  <% if (k.key_prefix) { %><span class="form-hint">(<%= k.key_prefix %>…)</span><% } %>
+                </td>
+                <td><%= k.scopes %></td>
+                <td><%= k.active ? 'yes' : 'no' %></td>
+                <td><%= k.last_used || '-' %></td>
+                <td>
+                  <% if (k.active) { %>
+                  <form method="post" action="/admin/users/<%= selectedUser.id %>/keys/<%= k.id %>/revoke" style="display:inline" class="form-admin-revoke-key">
+                    <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                      <input type="hidden" name="_csrf" value="<%- csrfToken %>">
+                    <% } %>
+                    <button type="submit" class="btn-secondary btn-sm">Revoke</button>
+                  </form>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+
+      <form method="post" action="/admin/users/<%= selectedUser.id %>/keys" class="dev-form">
+        <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+          <input type="hidden" name="_csrf" value="<%- csrfToken %>">
+        <% } %>
+        <input type="text" name="label" placeholder="Label" />
+        <input type="text" name="scopes" placeholder="Scopes (e.g., read:all write:self)" />
+        <button type="submit" class="btn-primary btn-sm">Create Key</button>
+      </form>
+    </div>
+
+
+    <div class="admin-card" style="margin-top:16px;">
+      <h3 class="section-title"><i class="ph ph-bell-ringing"></i> Webhooks for <%= selectedUser.username %></h3>
+
+      <div class="table-scroll">
+        <table class="table dev-table">
+          <thead><tr><th>ID</th><th>URL</th><th>Events</th><th>Active</th><th>Actions</th></tr></thead>
+          <tbody>
+            <% (userWebhooks || []).forEach(h => { %>
+              <tr>
+                <td><%= h.id %></td>
+                <td><%= h.url %></td>
+                <td><%= h.events %></td>
+                <td><%= h.active ? 'yes' : 'no' %></td>
+                <td>
+                  <form method="post" action="/admin/users/<%= selectedUser.id %>/webhooks/<%= h.id %>/delete" style="display:inline" class="form-admin-delete-webhook">
+                    <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                      <input type="hidden" name="_csrf" value="<%- csrfToken %>">
+                    <% } %>
+                    <button type="submit" class="btn-secondary btn-sm">Delete</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+
+      <form method="post" action="/admin/users/<%= selectedUser.id %>/webhooks" class="dev-form">
+        <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+          <input type="hidden" name="_csrf" value="<%- csrfToken %>">
+        <% } %>
+        <input type="url" name="url" placeholder="Webhook URL" required />
+        <input type="text" name="secret" placeholder="Secret" required />
+        <input type="text" name="events" placeholder="Comma-separated events (favorite.added, note.updated, ...)" required />
+        <button type="submit" class="btn-primary btn-sm">Create Webhook</button>
+      </form>
+    </div>
+  <% } %>
+
+</section>
+
+<script nonce="<%= scriptNonce %>">
+  (function() {
+    // --- Elements ---
+    const categorySelect = document.getElementById('categorySelect');
+    const newGroup = document.getElementById('newCategoryGroup');
+    const newInput = document.getElementById('newCategoryName');
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+    const deleteUserForm = document.getElementById('deleteUserForm');
+    const userSelectForm = document.getElementById('userSelectForm'); // Updated to use ID
+
+    // --- 1. Security Confirmations ---
+
+    // Confirm before revoking a key
+    document.querySelectorAll('.form-admin-revoke-key').forEach(f => {
+      f.addEventListener('submit', (e) => {
+        if (!confirm('Revoke this key?')) e.preventDefault();
+      });
+    });
+
+    // Confirm before deleting a webhook
+    document.querySelectorAll('.form-admin-delete-webhook').forEach(f => {
+      f.addEventListener('submit', (e) => {
+        if (!confirm('Delete this webhook?')) e.preventDefault();
+      });
+    });
+
+    // Confirm before deleting user (Critical Action)
+    if (deleteUserForm) {
+      deleteUserForm.addEventListener('submit', (e) => {
+        const ok = confirm('WARNING: This will delete the user and ALL their data (history, notes, keys). This action cannot be undone. Continue?');
+        if (!ok) e.preventDefault();
+      });
+    }
+
+
+    // --- 2. Upload Form Logic ---
+
+    // Toggle "New Folder" input display
+    if (categorySelect) {
+      categorySelect.addEventListener('change', () => {
+        if (categorySelect.value === 'new') {
+          newGroup.style.display = 'block';
+          newInput.required = true;
+          newInput.focus();
+        } else {
+          newGroup.style.display = 'none';
+          newInput.required = false;
+        }
+      });
+    }
+
+    // Custom File Upload Zone Click Handler
+    if (uploadZone && fileInput) {
+      uploadZone.addEventListener('click', () => {
+        fileInput.click();
+      });
+
+      // Update UI with selected filename
+      fileInput.addEventListener('change', () => {
+        const label = uploadZone.querySelector('p');
+        if (fileInput.files && fileInput.files[0] && label) {
+          label.innerText = fileInput.files[0].name;
+        }
+      });
+    }
+
+    // --- 3. User Selection Logic ---
+
+    // Auto-submit the form when a different user is selected
+    if (userSelectForm) {
+      const userSelect = userSelectForm.querySelector('select[name="userId"]');
+      if (userSelect) {
+        userSelect.addEventListener('change', () => {
+          userSelectForm.submit();
+        });
+      }
+    }
+
+  })();
+</script>

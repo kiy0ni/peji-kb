@@ -1,0 +1,755 @@
+openapi: 3.1.0
+info:
+  title: Knowledge Base API
+  version: 1.1.0
+  description: |
+    REST API for courses, files, favorites, notes, snippets, AI Chat (RAG), activity, webhooks, and API key management.
+    
+    **Authentication:**
+    - Supports Hybrid Authentication: Session (Browser) OR API Key (Scripts).
+    - API Keys must be sent in the `X-API-Key` header.
+    
+    **Security:**
+    - API keys are stored hashed (SHA-256).
+    - Webhook payloads are signed with HMAC SHA256 using the provided `secret`.
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Default Local Server
+tags:
+  - name: Identity
+    description: User information and authentication context.
+  - name: Core Data
+    description: Access to courses, files, notes, snippets, and favorites.
+  - name: AI Chat
+    description: Interaction with the RAG (Retrieval-Augmented Generation) system.
+  - name: Activity & Webhooks
+    description: Tracking user activity and managing webhooks.
+  - name: API Keys
+    description: Self-service API key management.
+  - name: Admin
+    description: Administrator endpoints for managing other users' resources.
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+    Success:
+      type: object
+      properties:
+        success:
+          type: boolean
+          default: true
+    UserIdentity:
+      type: object
+      properties:
+        user:
+          type: object
+          properties:
+            id: { type: integer }
+            username: { type: string }
+            role: { type: string }
+        key:
+          type: object
+          properties:
+            label: { type: string }
+            scopes: { type: string }
+            prefix: { type: string }
+    CourseList:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            type: object
+            properties:
+              key: { type: string }
+              label: { type: string }
+              path: { type: string }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              path: { type: string }
+              type: { type: string }
+              categories: { type: array, items: { type: string } }
+    FileMetadata:
+      type: object
+      properties:
+        path: { type: string }
+        size: { type: integer, format: int64 }
+        mtime: { type: string, format: date-time }
+        isFile: { type: boolean }
+    Note:
+      type: object
+      properties:
+        note: { type: string }
+        updated_at: { type: string, format: date-time, nullable: true }
+    Snippet:
+      type: object
+      properties:
+        code: { type: string }
+        timestamp: { type: string, format: date-time }
+    CombinedData:
+      type: object
+      properties:
+        note: { type: string }
+        snippets:
+          type: array
+          items:
+            $ref: '#/components/schemas/Snippet'
+    ChatMessage:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    ApiKey:
+      type: object
+      properties:
+        id: { type: integer }
+        label: { type: string }
+        scopes: { type: string }
+        key_prefix: { type: string }
+        active: { type: integer }
+        last_used: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+    Webhook:
+      type: object
+      properties:
+        id: { type: integer }
+        url: { type: string }
+        events: { type: string }
+        active: { type: integer }
+        created_at: { type: string, format: date-time }
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  # --- IDENTITY ---
+  /me:
+    get:
+      tags: [Identity]
+      summary: Get current user info
+      security: [{ ApiKeyAuth: [read:all] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserIdentity'
+
+  # --- CONTENT ---
+  /courses:
+    get:
+      tags: [Core Data]
+      summary: List all courses
+      security: [{ ApiKeyAuth: [read:all] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseList'
+
+  /files:
+    get:
+      tags: [Core Data]
+      summary: Get file metadata
+      parameters:
+        - name: path
+          in: query
+          required: true
+          schema: { type: string }
+      security: [{ ApiKeyAuth: [read:all] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileMetadata'
+
+  # --- DATA (NOTES, SNIPPETS, FAVORITES) ---
+  /data:
+    get:
+      tags: [Core Data]
+      summary: Get combined data (Notes & Snippets)
+      description: Retrieve both notes and snippets for a specific path in one call.
+      parameters:
+        - name: path
+          in: query
+          required: true
+          schema: { type: string }
+      security: [{ ApiKeyAuth: [read:all] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CombinedData'
+    post:
+      tags: [Core Data]
+      summary: Save combined data
+      security: [{ ApiKeyAuth: [write:self] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                path: { type: string }
+                data:
+                  $ref: '#/components/schemas/CombinedData'
+      responses:
+        '200':
+          description: Saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  /notes:
+    get:
+      tags: [Core Data]
+      summary: Get note
+      parameters:
+        - name: path
+          in: query
+          required: true
+          schema: { type: string }
+      security: [{ ApiKeyAuth: [read:all] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+    post:
+      tags: [Core Data]
+      summary: Save note
+      security: [{ ApiKeyAuth: [write:self] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                path: { type: string }
+                content: { type: string }
+      responses:
+        '200':
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  /snippets:
+    get:
+      tags: [Core Data]
+      summary: Get snippets
+      parameters:
+        - name: path
+          in: query
+          required: true
+          schema: { type: string }
+      security: [{ ApiKeyAuth: [read:all] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Snippet'
+    post:
+      tags: [Core Data]
+      summary: Save snippets
+      security: [{ ApiKeyAuth: [write:self] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                path: { type: string }
+                snippets:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Snippet'
+      responses:
+        '200':
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  /favorites:
+    get:
+      tags: [Core Data]
+      summary: List favorites
+      security: [{ ApiKeyAuth: [read:all] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        path: { type: string }
+                        title: { type: string }
+    post:
+      tags: [Core Data]
+      summary: Toggle favorite
+      security: [{ ApiKeyAuth: [write:self] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                path: { type: string }
+                title: { type: string }
+                toggle: 
+                  type: string
+                  enum: [add, remove]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  # --- AI CHAT (RAG) ---
+  /chat:
+    get:
+      tags: [AI Chat]
+      summary: Get chat history
+      description: Retrieve the conversation history for a specific document.
+      parameters:
+        - name: path
+          in: query
+          required: true
+          schema: { type: string }
+      security: [{ ApiKeyAuth: [read:all] }]
+      responses:
+        '200':
+          description: History retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ChatMessage'
+    post:
+      tags: [AI Chat]
+      summary: Send message to AI
+      description: Send a user message and get a RAG-generated response.
+      security: [{ ApiKeyAuth: [write:self] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                path: { type: string }
+                content: { type: string }
+      responses:
+        '201':
+          description: Response generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  messages:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ChatMessage'
+    delete:
+      tags: [AI Chat]
+      summary: Clear chat history
+      description: Delete all messages associated with a document.
+      parameters:
+        - name: path
+          in: query
+          required: true
+          schema: { type: string }
+      security: [{ ApiKeyAuth: [write:self] }]
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  # --- ACTIVITY & WEBHOOKS ---
+  /activity/reading:
+    post:
+      tags: [Activity & Webhooks]
+      summary: Track reading session
+      security: [{ ApiKeyAuth: [write:self] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action: { type: string, enum: [start, ping, stop] }
+                path: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+
+  /activity/site:
+    post:
+      tags: [Activity & Webhooks]
+      summary: Track site session
+      security: [{ ApiKeyAuth: [write:self] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action: { type: string, enum: [start, ping, stop] }
+                route: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+
+  /webhooks:
+    get:
+      tags: [Activity & Webhooks]
+      summary: List webhooks
+      security: [{ ApiKeyAuth: [read:all] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Webhook'
+    post:
+      tags: [Activity & Webhooks]
+      summary: Create webhook
+      security: [{ ApiKeyAuth: [write:self] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url: { type: string }
+                secret: { type: string }
+                events: { type: string }
+      responses:
+        '200':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  /webhooks/{id}:
+    delete:
+      tags: [Activity & Webhooks]
+      summary: Delete webhook
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      security: [{ ApiKeyAuth: [write:self] }]
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  # --- API KEYS ---
+  /keys:
+    get:
+      tags: [API Keys]
+      summary: List API keys
+      security: [{ ApiKeyAuth: [read:all] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApiKey'
+    post:
+      tags: [API Keys]
+      summary: Create API key
+      security: [{ ApiKeyAuth: [write:self] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                label: { type: string }
+                scopes: { type: string }
+      responses:
+        '200':
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiKey'
+                  - type: object
+                    properties:
+                      key: { type: string }
+
+  /keys/{id}/revoke:
+    post:
+      tags: [API Keys]
+      summary: Revoke API key
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      security: [{ ApiKeyAuth: [write:self] }]
+      responses:
+        '200':
+          description: Revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  # --- ADMIN ---
+  /admin/users/{id}/keys:
+    get:
+      tags: [Admin]
+      summary: List user keys
+      security: [{ ApiKeyAuth: [admin:all] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApiKey'
+    post:
+      tags: [Admin]
+      summary: Create user key
+      security: [{ ApiKeyAuth: [admin:all] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                label: { type: string }
+                scopes: { type: string }
+      responses:
+        '200':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  key: { type: string }
+
+  /admin/users/{id}/keys/{keyId}/revoke:
+    post:
+      tags: [Admin]
+      summary: Revoke user key
+      security: [{ ApiKeyAuth: [admin:all] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: keyId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  /admin/users/{id}/webhooks:
+    get:
+      tags: [Admin]
+      summary: List user webhooks
+      security: [{ ApiKeyAuth: [admin:all] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Webhook'
+    post:
+      tags: [Admin]
+      summary: Create user webhook
+      security: [{ ApiKeyAuth: [admin:all] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url: { type: string }
+                secret: { type: string }
+                events: { type: string }
+      responses:
+        '200':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  /admin/users/{id}/webhooks/{hookId}:
+    delete:
+      tags: [Admin]
+      summary: Delete user webhook
+      security: [{ ApiKeyAuth: [admin:all] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: hookId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  /admin/users/{id}/delete:
+    post:
+      tags: [Admin]
+      summary: Delete user account
+      description: Permanently delete a user account and all associated data.
+      security: [{ ApiKeyAuth: [admin:all] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'

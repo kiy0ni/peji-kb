@@ -1,0 +1,81 @@
+<%
+  // ==============================================================================
+  // PARTIAL: CONTEXT SIDEBAR (File Explorer)
+  // ==============================================================================
+  /**
+   * @fileoverview Renders the dynamic context sidebar, primarily used for file browsing.
+   * This sidebar includes the header, the user's favorites list, and the directory tree.
+   *
+   * @param {string} [contextTitle] - Title displayed at the top of the sidebar (e.g., 'Explorer').
+   * @param {string} [currentPath] - The path of the currently active folder/file, used for the 'Back' link logic.
+   * @param {Array<Object>} [favorites] - List of documents pinned by the user.
+   * @param {Object} [tree] - The root node object representing the file system structure to be displayed.
+   * @requires 'sidebarNode' - Recursive partial for rendering tree nodes.
+   */
+  // ==============================================================================
+%>
+
+<aside class="context-sidebar">
+
+  <div class="context-header">
+    <h2 class="context-title"><%= contextTitle || 'Explorer' %></h2>
+
+    <%
+      // Condition for displaying the 'Back' link:
+      // Show the link if a current path is defined AND it's not the application's root path ('courses').
+    %>
+    <% if (typeof currentPath !== 'undefined' && currentPath !== 'courses') { %>
+      <a href="/browse" class="back-link">
+        <i class="ph ph-arrow-left"></i> Back
+      </a>
+    <% } %>
+  </div>
+
+  <div class="tree-wrapper">
+
+    <% if (typeof favorites !== 'undefined' && favorites.length > 0) { %>
+      <div class="fav-list">
+        <div class="fav-title">Favorites</div>
+        <% favorites.forEach(fav => { %>
+          <a href="/file/<%= fav.path %>" class="fav-item">
+            <i class="ph ph-star"></i>
+            <span><%= fav.title || 'Document' %></span>
+          </a>
+        <% }) %>
+      </div>
+    <% } %>
+
+    <% if (tree) { %>
+      <%
+         // ROBUST ROOT CONTAINER DETECTION STRATEGY:
+         // The root container is the top-most wrapper in the tree view.
+         // We check for the explicit root name ('courses') OR a depth of 0.
+         // This determines whether to show the container name as a header or just its children.
+         const isRootContainer = (tree.name && tree.name.toLowerCase() === 'courses') || tree.depth === 0;
+      %>
+
+      <% if (isRootContainer) { %>
+        <% (tree.children || []).forEach(child => { %>
+          <%- include('sidebarNode', { node: child }) %>
+        <% }) %>
+
+      <% } else { %>
+        <div class="tree-context-header" style="padding: 0 12px 8px; font-size: 13px; font-weight: 600; color: var(--text-main); display:flex; align-items:center; gap:8px;">
+           <i class="ph ph-folder-open" style="color:var(--accent-primary)"></i>
+           <%= tree.name %>
+        </div>
+
+        <% (tree.children || []).forEach(child => { %>
+          <%- include('sidebarNode', { node: child }) %>
+        <% }) %>
+
+      <% } %>
+
+    <% } else { %>
+
+      <div class="tree-empty">Folder is empty or not found.</div>
+
+    <% } %>
+
+  </div>
+</aside>

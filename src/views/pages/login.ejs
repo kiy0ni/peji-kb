@@ -1,0 +1,90 @@
+<%
+  // ==============================================================================
+  // VIEW: LOGIN PAGE
+  // ==============================================================================
+  /**
+   * @fileoverview Renders the user authentication (login) interface.
+   * This view handles the submission of user credentials to the server.
+   *
+   * @param {string} appName - The global name of the application.
+   * @param {string|null} error - Error message string to display if authentication failed.
+   * @param {string} [csrfToken] - Security token required for the POST request protection.
+   */
+  // ==============================================================================
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Login | <%= appName %></title>
+
+  <link rel="stylesheet" href="/public/fonts/inter/inter.css" />
+
+  <link rel="stylesheet" href="/public/css/style.css" />
+</head>
+<body>
+
+  <div class="auth-container">
+    <div class="auth-card">
+
+      <div class="auth-logo">
+        <svg width="48" height="48" viewBox="0 0 40 40" fill="none">
+           <rect width="18" height="18" rx="5" fill="#A78BFA"/>
+           <rect x="22" width="18" height="18" rx="5" fill="#F472B6"/>
+           <rect y="22" width="18" height="18" rx="5" fill="#34D399"/>
+           <rect x="22" y="22" width="18" height="18" rx="5" fill="#60A5FA"/>
+        </svg>
+      </div>
+
+      <h1 class="auth-title">Welcome Back</h1>
+      <p class="auth-subtitle">Access your knowledge base.</p>
+
+      <% if (error) { %>
+        <div class="auth-error" role="alert">
+          <%= error %>
+        </div>
+      <% } %>
+
+      <form action="/login" method="POST" class="auth-form">
+
+        <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+          <input type="hidden" name="_csrf" value="<%- csrfToken %>">
+        <% } %>
+
+        <div class="form-group">
+          <label class="form-label" for="username">Username</label>
+          <input type="text"
+                 id="username"
+                 name="username"
+                 class="form-input"
+                 required
+                 autofocus
+                 autocomplete="username">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input type="password"
+                 id="password"
+                 name="password"
+                 class="form-input"
+                 required
+                 autocomplete="current-password">
+        </div>
+
+        <button type="submit" class="btn-primary">Login</button>
+
+      </form>
+
+      <div class="auth-footer">
+        Don't have an account? <a href="/register" class="auth-link">Sign Up</a>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>

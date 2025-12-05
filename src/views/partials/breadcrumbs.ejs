@@ -1,0 +1,53 @@
+<%
+  // ==============================================================================
+  // PARTIAL: BREADCRUMBS NAVIGATION
+  // ==============================================================================
+  /**
+   * @fileoverview Renders a secondary navigation scheme that displays the user's
+   * current location within the application's hierarchical structure (file system or URL path).
+   *
+   * @param {Array<Object>} breadcrumbs - List of breadcrumb objects.
+   * Each object must contain:
+   * - {string} name: The display text for the link/item.
+   * - {string} path: The URL path for the link.
+   * - {boolean} [isFile]: Optional flag indicating if the item represents a file, which may influence styling.
+   */
+  // ==============================================================================
+%>
+
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+
+  <% if (breadcrumbs && breadcrumbs.length) { %>
+    <ol>
+
+      <% breadcrumbs.forEach((c, idx) => { %>
+
+        <%
+           // LOGIC: Determine if the current item is the last one in the list.
+           // The last item represents the current page and should not be an active link.
+           const isLastItem = (idx === breadcrumbs.length - 1);
+        %>
+
+        <li class="crumb <%= c.isFile ? 'is-file' : '' %>">
+
+          <% if (isLastItem) { %>
+
+            <span aria-current="page">
+              <%= c.name %>
+            </span>
+
+          <% } else { %>
+
+            <a href="<%= c.path %>">
+              <%= c.name %>
+            </a>
+
+          <% } %>
+
+        </li>
+      <% }) %>
+
+    </ol>
+  <% } %>
+
+</nav>

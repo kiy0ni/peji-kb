@@ -1,0 +1,46 @@
+<%
+  // ==============================================================================
+  // PARTIAL: SIDEBAR NODE (Recursive Component)
+  // ==============================================================================
+  /**
+   * @fileoverview Renders a single node (file or directory) within the file explorer tree.
+   * This partial is designed to be called recursively to build the entire tree structure.
+   *
+   * @param {Object} node - The current file system object containing name, path, type, and optional children.
+   * @param {string} [currentPath] - The path of the currently viewed document, used for highlighting the active link.
+   * @requires 'sidebarNode' - Recursively includes itself for directory rendering.
+   */
+  // ==============================================================================
+%>
+
+<% if (node.type === 'directory') { %>
+
+  <details class="tree-dir" data-path="<%= node.path %>">
+    <summary>
+      <i class="ph-bold ph-caret-right icon-arrow"></i>
+      <i class="ph ph-folder icon-folder"></i>
+      <span class="label"><%= node.name %></span>
+    </summary>
+
+    <div class="tree-children">
+      <% (node.children || []).forEach(child => { %>
+        <%- include('sidebarNode', { node: child, currentPath: currentPath }) %>
+      <% }) %>
+    </div>
+  </details>
+
+<% } else { %>
+
+  <div class="tree-file" data-path="<%= node.path %>">
+
+    <%
+      // Determine if this file node is the currently active file being viewed.
+      const isActive = (typeof currentPath !== 'undefined' && currentPath === node.path);
+    %>
+
+    <a href="/file/<%= node.path %>" class="<%= isActive ? 'active' : '' %>">
+      <i class="ph ph-file-pdf icon-file"></i>
+      <span class="label"><%= node.name %></span>
+    </a>
+  </div>
+<% } %>
