@@ -1,0 +1,6 @@
+# .gitleaks.toml
+title = "PEJI-KB Gitleaks Config"
+
+[allowlist]
+description = "Allow secrets in documentation"
+paths = ['''README.md''']
