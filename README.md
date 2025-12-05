@@ -6,15 +6,15 @@ It is built to allow students and developers to centralize PDF course materials,
 
 ## Table of Contents
 
-1.  [Key Features](https://www.google.com/search?q=%23key-features)
-2.  [Technology Stack](https://www.google.com/search?q=%23technology-stack)
-3.  [Prerequisites](https://www.google.com/search?q=%23prerequisites)
-4.  [Installation](https://www.google.com/search?q=%23installation)
-5.  [Configuration](https://www.google.com/search?q=%23configuration)
-6.  [Project Architecture](https://www.google.com/search?q=%23project-architecture)
-7.  [Usage Guide](https://www.google.com/search?q=%23usage-guide)
-8.  [API Documentation](https://www.google.com/search?q=%23api-documentation)
-9.  [License](https://www.google.com/search?q=%23license)
+1. [Key Features](#key-features)
+2. [Technology Stack](#technology-stack)
+3. [Prerequisites](#prerequisites)
+4. [Installation](#installation)
+5. [Configuration](#configuration)
+6. [Project Architecture](#project-architecture)
+7. [Usage Guide](#usage-guide)
+8. [API Documentation](#api-documentation)
+9. [License](#license)
 
 ---
 
