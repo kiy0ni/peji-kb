@@ -2,7 +2,7 @@
  * ==============================================================================
  * CONFIGURATION: DATABASE (SQLite)
  * ==============================================================================
- * @fileoverview Manages the SQLite database connection, schema definition, 
+ * @fileoverview Manages the SQLite database connection, schema definition,
  * and initialization logic.
  * * @architecture
  * - Uses 'better-sqlite3' for synchronous, high-performance operations.
@@ -34,12 +34,12 @@ const DATA_DIR = path.join(ROOT_DIR, 'data');
 
 // Ensure the data directory exists before attempting connection
 if (!fs.existsSync(DATA_DIR)) {
-    try {
-        fs.mkdirSync(DATA_DIR, { recursive: true });
-    } catch (err) {
-        console.error('CRITICAL: Failed to create data directory.', err);
-        process.exit(1);
-    }
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  } catch (err) {
+    console.error('CRITICAL: Failed to create data directory.', err);
+    process.exit(1);
+  }
 }
 
 // --- 3. DATABASE INITIALIZATION ---
@@ -51,7 +51,6 @@ const db = new Database(path.join(DATA_DIR, 'knowledge.db'));
 // Performance Tuning: Enable Write-Ahead Logging (WAL)
 // This allows simultaneous readers and writers, preventing locking issues in basic multi-user scenarios.
 db.pragma('journal_mode = WAL');
-
 
 // --- 4. SCHEMA DEFINITION ---
 
@@ -196,7 +195,6 @@ const schema = `
   );
 `;
 
-
 // --- 5. EXPORTED FUNCTIONS ---
 
 /**
@@ -206,37 +204,39 @@ const schema = `
  * If true, it drops user-related tables to force a schema rebuild.
  */
 export function initDB() {
-    // 1. Migration Logic (Legacy Detection)
-    try {
-        // Check schema of an existing table
-        const tableInfo = db.prepare('PRAGMA table_info(favorites)').all();
-        
-        // Detect if we are on the old single-user schema
-        const hasUserId = tableInfo.some(col => col.name === 'user_id');
-        
-        // If table exists but lacks 'user_id', we must migrate
-        if (tableInfo.length > 0 && !hasUserId) {
-            console.warn('⚠️  [DB INIT] Schema mismatch detected (Legacy Version). Performing destructive migration...');
-            
-            // Drop tables that require structural changes
-            const dropQuery = `
+  // 1. Migration Logic (Legacy Detection)
+  try {
+    // Check schema of an existing table
+    const tableInfo = db.prepare('PRAGMA table_info(favorites)').all();
+
+    // Detect if we are on the old single-user schema
+    const hasUserId = tableInfo.some((col) => col.name === 'user_id');
+
+    // If table exists but lacks 'user_id', we must migrate
+    if (tableInfo.length > 0 && !hasUserId) {
+      console.warn(
+        '⚠️  [DB INIT] Schema mismatch detected (Legacy Version). Performing destructive migration...'
+      );
+
+      // Drop tables that require structural changes
+      const dropQuery = `
                 DROP TABLE IF EXISTS notes; 
                 DROP TABLE IF EXISTS snippets; 
                 DROP TABLE IF EXISTS favorites; 
                 DROP TABLE IF EXISTS users;
             `;
-            db.exec(dropQuery);
-            console.warn('⚠️  [DB INIT] Legacy tables dropped. Rebuilding schema...');
-        }
-    } catch (error) {
-        console.error('❌ [DB INIT] Migration check failed:', error);
+      db.exec(dropQuery);
+      console.warn('⚠️  [DB INIT] Legacy tables dropped. Rebuilding schema...');
     }
+  } catch (error) {
+    console.error('❌ [DB INIT] Migration check failed:', error);
+  }
 
-    // 2. Execute Schema Creation
-    // This is safe to run every time due to "IF NOT EXISTS" clauses
-    db.exec(schema);
+  // 2. Execute Schema Creation
+  // This is safe to run every time due to "IF NOT EXISTS" clauses
+  db.exec(schema);
 
-    console.log('✅ [DB INIT] Database initialized & Schema verified.');
+  console.log('✅ [DB INIT] Database initialized & Schema verified.');
 }
 
 // Export the database instance for use in controllers/services

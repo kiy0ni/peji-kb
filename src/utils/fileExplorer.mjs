@@ -29,7 +29,6 @@ import path from 'node:path';
  * - flat: A flat array of all PDF files found (useful for search/indexing).
  */
 export function scanCourses(rootAbsolute, rootRelative = 'courses') {
-
   // 1. Safety Check: Ensure the root directory exists before processing
   if (!fs.existsSync(rootAbsolute)) {
     console.warn(`[FileExplorer] Root path does not exist: ${rootAbsolute}`);
@@ -48,12 +47,18 @@ export function scanCourses(rootAbsolute, rootRelative = 'courses') {
    */
   function walk(currentAbs, currentRel, depth = 0) {
     let dirents;
-    
+
     try {
       dirents = fs.readdirSync(currentAbs, { withFileTypes: true });
     } catch (err) {
       console.error(`[FileExplorer] Error reading directory ${currentAbs}:`, err);
-      return { name: path.basename(currentAbs), path: currentRel, depth, type: 'directory', children: [] };
+      return {
+        name: path.basename(currentAbs),
+        path: currentRel,
+        depth,
+        type: 'directory',
+        children: []
+      };
     }
 
     const children = [];
@@ -72,7 +77,7 @@ export function scanCourses(rootAbsolute, rootRelative = 'courses') {
         // RECURSION: Dive deeper into sub-directories
         children.push(walk(abs, rel, depth + 1));
 
-      // CASE 2: FILE
+        // CASE 2: FILE
       } else if (d.isFile()) {
         // FILTER: Only process PDF files
         const ext = path.extname(d.name).toLowerCase();
@@ -86,7 +91,7 @@ export function scanCourses(rootAbsolute, rootRelative = 'courses') {
             type: 'file',
             ext: 'pdf',
             // Extract categories from path segments (excluding root and filename)
-            categories: rel.split('/').slice(1, -1),
+            categories: rel.split('/').slice(1, -1)
           };
 
           // Add to lists: 'flat' for search index, 'children' for tree structure
@@ -116,8 +121,8 @@ export function scanCourses(rootAbsolute, rootRelative = 'courses') {
   // 3. Post-Processing: Extract top-level categories
   // These are the direct children directories of the root folder (depth 1 in logic, direct children of root)
   const categories = (tree.children || [])
-    .filter(c => c.type === 'directory')
-    .map(c => ({ key: c.name, label: c.name, path: c.path }));
+    .filter((c) => c.type === 'directory')
+    .map((c) => ({ key: c.name, label: c.name, path: c.path }));
 
   return { tree, categories, flat };
 }
@@ -134,7 +139,7 @@ export function buildBreadcrumbs(relPath) {
 
   // 1. Normalize path separators (Handle Windows backslashes)
   const safe = relPath.replace(/\\/g, '/');
-  
+
   // 2. Split into segments and filter empty strings
   const segments = safe.split('/').filter(Boolean);
 
@@ -159,9 +164,7 @@ export function buildBreadcrumbs(relPath) {
     // Generate specific URL based on type (Clean URL format)
     // - Files use the reader route: /file/...
     // - Folders use the browser route: /browse/...
-    const url = isFile
-        ? `/file/${accum}`
-        : `/browse/${accum}`;
+    const url = isFile ? `/file/${accum}` : `/browse/${accum}`;
 
     crumbs.push({
       name: seg,

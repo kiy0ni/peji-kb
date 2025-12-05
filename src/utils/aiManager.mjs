@@ -24,24 +24,24 @@
  * @throws {Error} If the configured provider is not supported.
  */
 export async function askAI(messages) {
-    // 1. Configuration: Load provider and model from environment or defaults
-    const provider = process.env.AI_PROVIDER || 'ollama';
-    const model = process.env.AI_MODEL || 'mistral';
+  // 1. Configuration: Load provider and model from environment or defaults
+  const provider = process.env.AI_PROVIDER || 'ollama';
+  const model = process.env.AI_MODEL || 'mistral';
 
-    console.log(`[AI MANAGER] Dispatching request to provider: ${provider} (Model: ${model})...`);
+  console.log(`[AI MANAGER] Dispatching request to provider: ${provider} (Model: ${model})...`);
 
-    // 2. Dispatch Strategy (Adapter Pattern)
-    switch (provider) {
-        case 'ollama':
-            return await _callOllama(messages, model);
-            
-        // Future Implementations:
-        // case 'openai': return await _callOpenAI(messages, model);
-        // case 'gemini': return await _callGemini(messages, model);
+  // 2. Dispatch Strategy (Adapter Pattern)
+  switch (provider) {
+    case 'ollama':
+      return await _callOllama(messages, model);
 
-        default:
-            throw new Error(`[AI MANAGER] Unsupported AI Provider: ${provider}`);
-    }
+    // Future Implementations:
+    // case 'openai': return await _callOpenAI(messages, model);
+    // case 'gemini': return await _callGemini(messages, model);
+
+    default:
+      throw new Error(`[AI MANAGER] Unsupported AI Provider: ${provider}`);
+  }
 }
 
 /**
@@ -60,43 +60,44 @@ export async function askAI(messages) {
  * @private
  */
 async function _callOllama(messages, model) {
-    // Configuration: Default to localhost standard port if not specified
-    const url = process.env.AI_API_URL || 'http://127.0.0.1:11434/api/chat';
-    
-    try {
-        // 1. Construct the Payload
-        // We disable streaming ('stream: false') to simplify the response handling for V1.
-        const payload = {
-            model: model,
-            messages: messages,
-            stream: false
-        };
+  // Configuration: Default to localhost standard port if not specified
+  const url = process.env.AI_API_URL || 'http://127.0.0.1:11434/api/chat';
 
-        // 2. Execute API Call
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json' 
-            },
-            body: JSON.stringify(payload)
-        });
+  try {
+    // 1. Construct the Payload
+    // We disable streaming ('stream: false') to simplify the response handling for V1.
+    const payload = {
+      model: model,
+      messages: messages,
+      stream: false
+    };
 
-        // 3. Network/Protocol Error Handling
-        if (!response.ok) {
-            throw new Error(`Ollama API responded with status: ${response.statusText} (${response.status})`);
-        }
+    // 2. Execute API Call
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
 
-        // 4. Parse Response
-        const data = await response.json();
-        
-        // Return only the content string to maintain the agnostic interface contract
-        return data.message.content;
-
-    } catch (error) {
-        // Log the technical error for server-side debugging
-        console.error('[AI ADAPTER] Ollama Connection Error:', error);
-        
-        // Return a safe, user-facing error message (Fail Gracefully)
-        return '⚠️ Error: Unable to reach local AI service. Please verify that Ollama is running.';
+    // 3. Network/Protocol Error Handling
+    if (!response.ok) {
+      throw new Error(
+        `Ollama API responded with status: ${response.statusText} (${response.status})`
+      );
     }
+
+    // 4. Parse Response
+    const data = await response.json();
+
+    // Return only the content string to maintain the agnostic interface contract
+    return data.message.content;
+  } catch (error) {
+    // Log the technical error for server-side debugging
+    console.error('[AI ADAPTER] Ollama Connection Error:', error);
+
+    // Return a safe, user-facing error message (Fail Gracefully)
+    return '⚠️ Error: Unable to reach local AI service. Please verify that Ollama is running.';
+  }
 }

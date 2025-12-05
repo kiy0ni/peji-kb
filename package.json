@@ -5,7 +5,10 @@
   "main": "server.mjs",
   "scripts": {
     "test": "cross-env NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --detectOpenHandles --verbose",
+    "test:coverage": "npm run test -- --coverage",
     "lint": "eslint . --ext .js,.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "dev": "nodemon server.mjs",
     "start": "node server.mjs"
   },
@@ -36,6 +39,7 @@
     "eslint": "^8.57.0",
     "jest": "^29.7.0",
     "nodemon": "^3.1.11",
+    "prettier": "^3.2.5",
     "supertest": "^6.3.4"
   },
   "jest": {
@@ -43,6 +47,16 @@
     "transform": {},
     "moduleNameMapper": {
       "^(\\.{1,2}/.*)\\.js$": "$1"
-    }
+    },
+    "collectCoverageFrom": [
+      "src/**/*.{js,mjs}",
+      "!src/config/**",
+      "!**/node_modules/**",
+      "!**/vendor/**"
+    ],
+    "coverageReporters": [
+      "text",
+      "lcov"
+    ]
   }
 }
