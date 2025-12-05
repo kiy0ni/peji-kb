@@ -57,3 +57,18 @@ coverage/
 # Jest cache files
 .jest/
 .cache/
+
+# -------------------------
+# TESTING AND COVERAGE
+# -------------------------
+# Jest coverage reports
+coverage/
+# Jest cache files
+.jest/
+.cache/
+
+# -------------------------
+# VENDOR / STATIC ASSETS
+# Ignore minified libraries that are not tracked as source code.
+# The `public/vendor` folder contains pre-built/external libraries (EasyMDE, Phosphor).
+# public/vendor/
