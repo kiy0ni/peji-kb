@@ -8,7 +8,7 @@
  *
  * @author Sacha Pastor
  * @environment Node.js / Express
- * @dependencies express-session, csurf, cookie-parser
+ * @dependencies express-session, csurf, cookie-parser, connect-sqlite3
  * ==============================================================================
  */
 
@@ -20,12 +20,18 @@ import cookieParser from 'cookie-parser';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// IMPORT: SQLite Session Store Adapter
+import sqlite3Session from 'connect-sqlite3';
+
 // --- 2. ENVIRONMENT SETUP ---
 
 // Resolve paths relative to the project root
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '../../');
+
+// INITIALIZATION: SQLite Store
+const SQLiteStore = sqlite3Session(session);
 
 /**
  * Initializes and applies all core middlewares to the Express app.
@@ -36,17 +42,32 @@ export function setupCoreMiddlewares(app) {
   // SECTION 1: SESSION MANAGEMENT
   // ===========================================================================
   // Configures the HTTP session storage.
-  // SECURITY NOTE: In production, ensure 'secure: true' is active (requires HTTPS).
+
+  // RELAXED CONFIGURATION:
+  // We only enforce 'secure: true' (HTTPS only) if explicitly requested via env var.
+  // This prevents login loops if you run 'NODE_ENV=production' on HTTP (local network/VPS without SSL).
+  const useSecureCookies =
+    process.env.NODE_ENV === 'production' && process.env.REQUIRE_HTTPS === 'true';
+
   app.use(
     session({
+      // CONFIGURATION: SQLite Store
+      // Persists sessions to disk so they survive server restarts.
+      store: new SQLiteStore({
+        dir: path.join(ROOT_DIR, 'data'), // Store in the existing 'data' folder
+        db: 'sessions.db', // Database filename
+        table: 'sessions', // SQL table name
+        concurrentDB: true // Enable WAL mode for concurrency
+      }),
+
       secret: process.env.SESSION_SECRET || 'dev_secret_key', // Fallback for dev only
       resave: false, // Do not save session if unmodified
       saveUninitialized: false, // Do not create session until something is stored
       cookie: {
         httpOnly: true, // Prevent XSS access to cookies
-        secure: process.env.NODE_ENV === 'production', // Send only over HTTPS in prod
+        secure: useSecureCookies, // Only force HTTPS if explicitly configured
         sameSite: 'lax', // CSRF mitigation
-        maxAge: 1000 * 60 * 60 * 24 // 24 hours
+        maxAge: 1000 * 60 * 60 * 24 * 7 // Increased to 7 days for convenience
       }
     })
   );
@@ -121,7 +142,7 @@ export function setupCoreMiddlewares(app) {
     cookie: {
       httpOnly: true,
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production'
+      secure: useSecureCookies // Matches session cookie policy
     },
     value: (req) => {
       // Check body, query, and headers for the token
