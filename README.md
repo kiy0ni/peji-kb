@@ -6,15 +6,15 @@ It is built to allow students and developers to centralize PDF course materials,
 
 ## Table of Contents
 
-1.  [Key Features](https://www.google.com/search?q=%23key-features)
-2.  [Technology Stack](https://www.google.com/search?q=%23technology-stack)
-3.  [Prerequisites](https://www.google.com/search?q=%23prerequisites)
-4.  [Installation](https://www.google.com/search?q=%23installation)
-5.  [Configuration](https://www.google.com/search?q=%23configuration)
-6.  [Project Architecture](https://www.google.com/search?q=%23project-architecture)
-7.  [Usage Guide](https://www.google.com/search?q=%23usage-guide)
-8.  [API Documentation](https://www.google.com/search?q=%23api-documentation)
-9.  [License](https://www.google.com/search?q=%23license)
+1. [Key Features](#key-features)
+2. [Technology Stack](#technology-stack)
+3. [Prerequisites](#prerequisites)
+4. [Installation](#installation)
+5. [Configuration](#configuration)
+6. [Project Architecture](#project-architecture)
+7. [Usage Guide](#usage-guide)
+8. [API Documentation](#api-documentation)
+9. [License](#license)
 
 ---
 
@@ -72,7 +72,7 @@ It is built to allow students and developers to centralize PDF course materials,
 1.  **Clone the repository**
 
     ```bash
-    git clone https://github.com/your-org/peji-kb.git
+    git clone [https://github.com/your-org/peji-kb.git](https://github.com/your-org/peji-kb.git)
     cd peji-kb
     ```
 
@@ -120,13 +120,13 @@ ADMIN_CODE=SecretCodeToRegisterAsAdmin
 # AI Configuration (Ollama)
 AI_PROVIDER=ollama
 AI_MODEL=mistral
-AI_API_URL=http://127.0.0.1:11434/api/chat
+AI_API_URL=[http://127.0.0.1:11434/api/chat](http://127.0.0.1:11434/api/chat)
 
 # Optional System Prompt Override
 # AI_SYSTEM_PROMPT="You are a precise technical assistant..."
-```
+````
 
----
+-----
 
 ## Project Architecture
 
@@ -149,7 +149,7 @@ peji-kb/
 └── openapi.yaml          # API Specification
 ```
 
----
+-----
 
 ## Usage Guide
 
@@ -166,10 +166,10 @@ peji-kb/
 2.  Open the Tools Panel (Sidebar) and select the **AI Chat** tab.
 3.  Ask a question regarding the document.
 4.  The server performs the following:
-    - Extracts text from the PDF.
-    - Truncates context to fit the token window.
-    - Queries the local LLM via the Adapter.
-    - Returns the response and stores the history.
+      - Extracts text from the PDF.
+      - Truncates context to fit the token window.
+      - Queries the local LLM via the Adapter.
+      - Returns the response and stores the history.
 
 ### Managing API Keys
 
@@ -178,14 +178,14 @@ peji-kb/
 3.  Store the key immediately, as it is only shown once.
 4.  Use this key in the `X-API-Key` header for external scripts.
 
----
+-----
 
 ## API Documentation
 
 PEJI-KB exposes a fully documented REST API compliant with the OpenAPI 3.1.0 specification.
 
-- **Spec File:** See `openapi.yaml` in the root directory.
-- **Base URL:** `/api/v1`
+  - **Spec File:** See `openapi.yaml` in the root directory.
+  - **Base URL:** `/api/v1`
 
 ### Example: Retrieve User Identity
 
@@ -213,7 +213,7 @@ curl -X GET http://localhost:3000/api/v1/me \
 }
 ```
 
----
+-----
 
 ## License
 
