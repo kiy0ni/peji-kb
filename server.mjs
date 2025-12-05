@@ -60,7 +60,10 @@ try {
     initDB(); // Connects to the database and ensures schema is up-to-date (creates tables, runs migrations)
 
     // B. Background Worker Start
-    startWebhookWorker(); // Initiates the background process for tasks like processing webhooks asynchronously
+    // Only start the worker if NOT in test mode to prevent Jest from hanging due to active intervals
+    if (process.env.NODE_ENV !== 'test') {
+        startWebhookWorker(); // Initiates the background process for tasks like processing webhooks asynchronously
+    }
 } catch (error) {
     // Log error and exit process if critical initialization fails
     console.error('CRITICAL ERROR: Failed to initialize application foundations (DB/Workers).', error);
