@@ -66,6 +66,7 @@ coverage/
 # Jest cache files
 .jest/
 .cache/
+*.sarif
 
 # -------------------------
 # VENDOR / STATIC ASSETS
