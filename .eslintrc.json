@@ -5,21 +5,30 @@
         "node": true,
         "jest": true 
     },
+    "ignorePatterns": [
+        "node_modules/",
+        "dist/",
+        "build/",
+        "coverage/",
+        "public/vendor/",
+        "public/**/*.min.js",
+        "*.min.js",
+        "tests/" 
+    ],
     "extends": "eslint:recommended",
     "parserOptions": {
         "ecmaVersion": "latest",
         "sourceType": "module"
     },
+    "globals": {
+        "EasyMDE": "readonly"
+    },
     "rules": {
-        // Enforce the use of 'const' or 'let' instead of 'var'
         "no-var": "error",
-        // Prefer const/let over var
         "prefer-const": "warn",
-        // Relax unused var rule to 'warn' for quick prototyping
         "no-unused-vars": "warn",
-        // Allow console.log for server-side debugging
         "no-console": "off",
-        // Specific rule to allow mixed quotes in template literals (e.g., HTML strings)
-        "quotes": ["error", "single", { "avoidEscape": true, "allowTemplateLiterals": true }]
+        "quotes": ["error", "single", { "avoidEscape": true, "allowTemplateLiterals": true }],
+        "no-empty": ["error", { "allowEmptyCatch": true }] 
     }
 }
