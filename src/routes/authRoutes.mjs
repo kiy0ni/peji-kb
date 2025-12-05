@@ -35,7 +35,6 @@ router.get('/login', authController.getLoginPage);
 // Security: Uses 'loginLimiter' to mitigate password guessing attacks.
 router.post('/login', loginLimiter, authController.postLogin);
 
-
 /**
  * ==============================================================================
  * II. REGISTRATION ROUTES (Account Creation)
@@ -50,7 +49,6 @@ router.get('/register', authController.getRegisterPage);
 // (Limit configured in authMiddleware, typically ~3 attempts/min).
 router.post('/register', registerLimiter, authController.postRegister);
 
-
 /**
  * ==============================================================================
  * III. LOGOUT ROUTES (Session Termination)
@@ -59,6 +57,5 @@ router.post('/register', registerLimiter, authController.postRegister);
 
 // GET: Destroy Session and Redirect
 router.get('/logout', authController.logout);
-
 
 export default router;

@@ -56,18 +56,21 @@ const app = express();
  * Establishes foundational services needed before the server starts accepting requests.
  */
 try {
-    // A. Database Connection & Migration
-    initDB(); // Connects to the database and ensures schema is up-to-date (creates tables, runs migrations)
+  // A. Database Connection & Migration
+  initDB(); // Connects to the database and ensures schema is up-to-date (creates tables, runs migrations)
 
-    // B. Background Worker Start
-    // Only start the worker if NOT in test mode to prevent Jest from hanging due to active intervals
-    if (process.env.NODE_ENV !== 'test') {
-        startWebhookWorker(); // Initiates the background process for tasks like processing webhooks asynchronously
-    }
+  // B. Background Worker Start
+  // Only start the worker if NOT in test mode to prevent Jest from hanging due to active intervals
+  if (process.env.NODE_ENV !== 'test') {
+    startWebhookWorker(); // Initiates the background process for tasks like processing webhooks asynchronously
+  }
 } catch (error) {
-    // Log error and exit process if critical initialization fails
-    console.error('CRITICAL ERROR: Failed to initialize application foundations (DB/Workers).', error);
-    process.exit(1);
+  // Log error and exit process if critical initialization fails
+  console.error(
+    'CRITICAL ERROR: Failed to initialize application foundations (DB/Workers).',
+    error
+  );
+  process.exit(1);
 }
 
 /**
@@ -104,12 +107,12 @@ app.use('/raw', requireAuth, express.static(path.join(__dirname, 'courses')));
 
 // 5. Fallback / 404 Handler (Catch-all for any request that did not match a defined route)
 app.use((req, res) => {
-    // Sets HTTP status to 404 and renders a standard error page
-    res.status(404).render('pages/error', {
-        title: 'Not Found',
-        message: 'The requested page could not be found.',
-        breadcrumbs: []
-    });
+  // Sets HTTP status to 404 and renders a standard error page
+  res.status(404).render('pages/error', {
+    title: 'Not Found',
+    message: 'The requested page could not be found.',
+    breadcrumbs: []
+  });
 });
 
 // --- SECTION 5: SERVER STARTUP ---
@@ -119,9 +122,9 @@ app.use((req, res) => {
  * Binds the Express application to the specified PORT and logs the successful startup.
  */
 if (process.env.NODE_ENV !== 'test') {
-    app.listen(PORT, () => {
-        console.log(`Knowledge Base Server running: http://localhost:${PORT}`);
-    });
+  app.listen(PORT, () => {
+    console.log(`Knowledge Base Server running: http://localhost:${PORT}`);
+  });
 }
 
 export { app };

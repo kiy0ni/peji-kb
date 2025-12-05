@@ -23,7 +23,7 @@ import db from '../config/database.mjs';
  * @returns {string} A 32-byte hexadecimal string (64 characters).
  */
 export function generateApiKey() {
-    return crypto.randomBytes(32).toString('hex');
+  return crypto.randomBytes(32).toString('hex');
 }
 
 /**
@@ -36,27 +36,30 @@ export function generateApiKey() {
  * @returns {Object|null} The database record if found and active, otherwise null.
  */
 export function findKeyRecord(key) {
-    // 1. Validation
-    if (!key) return null;
+  // 1. Validation
+  if (!key) return null;
 
-    const cleanedKey = String(key).trim();
+  const cleanedKey = String(key).trim();
 
-    try {
-        // 2. Hash the input key for lookup
-        const hashedKey = crypto.createHash('sha256').update(cleanedKey).digest('hex');
+  try {
+    // 2. Hash the input key for lookup
+    const hashedKey = crypto.createHash('sha256').update(cleanedKey).digest('hex');
 
-        // 3. Query DB
-        const record = db.prepare(`
+    // 3. Query DB
+    const record = db
+      .prepare(
+        `
             SELECT * FROM api_keys 
             WHERE key_sha256 = ? AND active = 1
-        `).get(hashedKey);
+        `
+      )
+      .get(hashedKey);
 
-        return record || null;
-
-    } catch (error) {
-        // Suppress errors to prevent information leakage during auth attempts
-        return null;
-    }
+    return record || null;
+  } catch (error) {
+    // Suppress errors to prevent information leakage during auth attempts
+    return null;
+  }
 }
 
 /**
@@ -69,30 +72,31 @@ export function findKeyRecord(key) {
  * @throws {Error} If the database insertion fails.
  */
 export function insertApiKey(userId, label, scopes) {
-    // 1. Generate Credential
-    const rawKey = generateApiKey();
-    
-    // 2. Prepare Storage Data
-    // - Hash the key for secure storage
-    // - Extract the first 8 chars as a prefix for UI identification
-    const hashedKey = crypto.createHash('sha256').update(rawKey).digest('hex');
-    const keyPrefix = rawKey.substring(0, 8);
+  // 1. Generate Credential
+  const rawKey = generateApiKey();
 
-    try {
-        // 3. Persist to Database
-        db.prepare(`
+  // 2. Prepare Storage Data
+  // - Hash the key for secure storage
+  // - Extract the first 8 chars as a prefix for UI identification
+  const hashedKey = crypto.createHash('sha256').update(rawKey).digest('hex');
+  const keyPrefix = rawKey.substring(0, 8);
+
+  try {
+    // 3. Persist to Database
+    db.prepare(
+      `
             INSERT INTO api_keys 
             (user_id, key_sha256, key_prefix, label, scopes, active, created_at) 
             VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
-        `).run(userId, hashedKey, keyPrefix, label || null, scopes || 'read:all write:self');
+        `
+    ).run(userId, hashedKey, keyPrefix, label || null, scopes || 'read:all write:self');
+  } catch (error) {
+    console.error('[ApiKeyService] Insertion failed:', error);
+    throw new Error('Failed to insert API key into database.');
+  }
 
-    } catch (error) {
-        console.error('[ApiKeyService] Insertion failed:', error);
-        throw new Error('Failed to insert API key into database.');
-    }
-
-    // Return the raw key only once immediately after creation
-    return { key: rawKey, prefix: keyPrefix };
+  // Return the raw key only once immediately after creation
+  return { key: rawKey, prefix: keyPrefix };
 }
 
 /**
@@ -105,35 +109,38 @@ export function insertApiKey(userId, label, scopes) {
  * @returns {Array<Object>} List of API key records (excluding sensitive hashes).
  */
 export function apiKeysListForUser(userId) {
-    try {
-        // 1. Introspection: Check if 'key_prefix' column exists in the current schema
-        const columns = db.prepare('PRAGMA table_info(api_keys)').all();
-        const hasPrefixColumn = columns.some(col => col.name === 'key_prefix');
+  try {
+    // 1. Introspection: Check if 'key_prefix' column exists in the current schema
+    const columns = db.prepare('PRAGMA table_info(api_keys)').all();
+    const hasPrefixColumn = columns.some((col) => col.name === 'key_prefix');
 
-        // 2. Construct Query based on Schema Availability
-        let query;
-        if (hasPrefixColumn) {
-            query = `
+    // 2. Construct Query based on Schema Availability
+    let query;
+    if (hasPrefixColumn) {
+      query = `
                 SELECT id, label, scopes, active, last_used, created_at, key_prefix 
                 FROM api_keys 
                 WHERE user_id = ?
             `;
-        } else {
-            query = `
+    } else {
+      query = `
                 SELECT id, label, scopes, active, last_used, created_at 
                 FROM api_keys 
                 WHERE user_id = ?
             `;
-        }
+    }
 
-        return db.prepare(query).all(userId);
-
-    } catch (error) {
-        // Fallback: Safe default query if introspection fails
-        return db.prepare(`
+    return db.prepare(query).all(userId);
+  } catch (error) {
+    // Fallback: Safe default query if introspection fails
+    return db
+      .prepare(
+        `
             SELECT id, label, scopes, active, last_used, created_at 
             FROM api_keys 
             WHERE user_id = ?
-        `).all(userId);
-    }
+        `
+      )
+      .all(userId);
+  }
 }

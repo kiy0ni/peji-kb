@@ -2,7 +2,7 @@
  * ==============================================================================
  * UTILITY: SHARED HELPER FUNCTIONS
  * ==============================================================================
- * @fileoverview A collection of agnostic utility functions used throughout the 
+ * @fileoverview A collection of agnostic utility functions used throughout the
  * client-side application.
  * * @author Sacha Pastor
  * @environment Browser (Client-side JS)
@@ -20,21 +20,21 @@
  * @returns {Function} A new function that wraps the original with the delay logic.
  */
 export function debounce(func, wait) {
-    let timeout;
+  let timeout;
 
-    return function executedFunction(...args) {
-        // Define the delayed execution logic
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-
-        // Clear any existing timer to reset the cooldown
-        clearTimeout(timeout);
-
-        // Restart the timer
-        timeout = setTimeout(later, wait);
+  return function executedFunction(...args) {
+    // Define the delayed execution logic
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
     };
+
+    // Clear any existing timer to reset the cooldown
+    clearTimeout(timeout);
+
+    // Restart the timer
+    timeout = setTimeout(later, wait);
+  };
 }
 
 /**
@@ -50,15 +50,15 @@ export function debounce(func, wait) {
  * @private
  */
 function _getCsrfToken() {
-    // Attempt 1: Get from <meta name="_csrf" ...> (Standard approach)
-    const meta = document.querySelector('meta[name="_csrf"]');
-    if (meta) return meta.getAttribute('content'); // Changed to getAttribute for consistency
+  // Attempt 1: Get from <meta name="_csrf" ...> (Standard approach)
+  const meta = document.querySelector('meta[name="_csrf"]');
+  if (meta) return meta.getAttribute('content'); // Changed to getAttribute for consistency
 
-    // Attempt 2: Get from <input name="_csrf" ...> (Fallback for legacy forms)
-    const input = document.querySelector('input[name="_csrf"]');
-    if (input) return input.value;
+  // Attempt 2: Get from <input name="_csrf" ...> (Fallback for legacy forms)
+  const input = document.querySelector('input[name="_csrf"]');
+  if (input) return input.value;
 
-    return null;
+  return null;
 }
 
 /**
@@ -73,48 +73,47 @@ function _getCsrfToken() {
  * @returns {Promise<Response|void>} The Fetch Promise, or a resolved Promise if Beacon is used.
  */
 export function postJSON(url, data, { beacon = false, signal = null } = {}) {
-    
-    // 1. BEACON STRATEGY (Analytics / Page Unload)
-    // If enabled and supported, send data asynchronously without blocking the thread.
-    // This is "fire-and-forget", so we return a resolved promise immediately.
-    try {
-        if (beacon && navigator.sendBeacon) {
-            const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-            navigator.sendBeacon(url, blob);
-            return Promise.resolve();
-        }
-    } catch (error) {
-        // If Beacon fails, fall through to standard Fetch
-        console.warn('[Utils] Beacon failed, falling back to Fetch:', error);
+  // 1. BEACON STRATEGY (Analytics / Page Unload)
+  // If enabled and supported, send data asynchronously without blocking the thread.
+  // This is "fire-and-forget", so we return a resolved promise immediately.
+  try {
+    if (beacon && navigator.sendBeacon) {
+      const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+      navigator.sendBeacon(url, blob);
+      return Promise.resolve();
     }
+  } catch (error) {
+    // If Beacon fails, fall through to standard Fetch
+    console.warn('[Utils] Beacon failed, falling back to Fetch:', error);
+  }
 
-    // 2. FETCH STRATEGY (Standard AJAX)
-    
-    // Prepare Headers
-    const headers = { 
-        'Content-Type': 'application/json' 
-    };
+  // 2. FETCH STRATEGY (Standard AJAX)
 
-    // Inject CSRF Token (Security Requirement)
-    const csrfToken = _getCsrfToken();
-    if (csrfToken) {
-        // NOTE: The server coreMiddleware looks for 'X-CSRF-Token'
-        headers['X-CSRF-Token'] = csrfToken;
-    } else {
-        console.debug('[Utils] Warning: No CSRF token found in DOM.');
-    }
+  // Prepare Headers
+  const headers = {
+    'Content-Type': 'application/json'
+  };
 
-    // Execute Request
-    return fetch(url, { 
-        method: 'POST', 
-        headers: headers,
-        body: JSON.stringify(data),
-        
-        // CRITICAL: 'same-origin' ensures Session Cookies are sent with the request.
-        // Without this, the server won't recognize the user session.
-        credentials: 'same-origin',
-        
-        // Allow the caller to cancel this request (e.g., if the user navigates away)
-        signal: signal 
-    });
+  // Inject CSRF Token (Security Requirement)
+  const csrfToken = _getCsrfToken();
+  if (csrfToken) {
+    // NOTE: The server coreMiddleware looks for 'X-CSRF-Token'
+    headers['X-CSRF-Token'] = csrfToken;
+  } else {
+    console.debug('[Utils] Warning: No CSRF token found in DOM.');
+  }
+
+  // Execute Request
+  return fetch(url, {
+    method: 'POST',
+    headers: headers,
+    body: JSON.stringify(data),
+
+    // CRITICAL: 'same-origin' ensures Session Cookies are sent with the request.
+    // Without this, the server won't recognize the user session.
+    credentials: 'same-origin',
+
+    // Allow the caller to cancel this request (e.g., if the user navigates away)
+    signal: signal
+  });
 }

@@ -23,7 +23,6 @@ import { requireApiKey } from '../middlewares/authMiddleware.mjs';
 // --- 2. ROUTER INITIALIZATION ---
 const router = express.Router();
 
-
 /**
  * ==============================================================================
  * I. GLOBAL SECURITY MIDDLEWARE
@@ -33,7 +32,6 @@ const router = express.Router();
  * access these endpoints.
  */
 router.use(requireApiKey(['admin:all']));
-
 
 /**
  * ==============================================================================
@@ -52,7 +50,6 @@ router.post('/users/:id/keys', adminController.createUserKey);
 // POST: Revoke a specific key
 router.post('/users/:id/keys/:keyId/revoke', adminController.revokeUserKey);
 
-
 /**
  * ==============================================================================
  * III. USER WEBHOOK MANAGEMENT
@@ -69,7 +66,6 @@ router.post('/users/:id/webhooks', adminController.createUserWebhook);
 // DELETE: Remove a webhook subscription
 router.delete('/users/:id/webhooks/:hookId', adminController.deleteUserWebhook);
 
-
 /**
  * ==============================================================================
  * IV. USER LIFECYCLE MANAGEMENT
@@ -79,6 +75,5 @@ router.delete('/users/:id/webhooks/:hookId', adminController.deleteUserWebhook);
 // POST: Permanently delete a user account and associated data
 // CAUTION: This action is destructive and typically irreversible.
 router.post('/users/:id/delete', adminController.deleteUser);
-
 
 export default router;

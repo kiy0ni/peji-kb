@@ -3,7 +3,7 @@
  * ROUTE: VIEW CONTROLLER (UI ROUTES)
  * ==============================================================================
  * @fileoverview Defines the routing logic for the server-side rendered UI (HTML).
- * These routes handle the main application navigation, settings forms, and 
+ * These routes handle the main application navigation, settings forms, and
  * administration panels.
  * * @security All routes in this file are protected by the 'requireAuth' middleware.
  * @dependencies express, multer (file upload)
@@ -35,7 +35,6 @@ const router = express.Router();
  */
 router.use(requireAuth);
 
-
 /**
  * ==============================================================================
  * II. CORE USER VIEWS
@@ -47,7 +46,6 @@ router.get('/', viewController.getDashboard);
 
 // User Profile & Configuration Page
 router.get('/settings', viewController.getSettings);
-
 
 /**
  * ==============================================================================
@@ -65,7 +63,6 @@ router.get(/^\/browse\/(.*)/, viewController.getBrowse);
 
 // PDF File Viewer (Reader Mode)
 router.get(/^\/file\/(.*)/, viewController.getFileViewer);
-
 
 /**
  * ==============================================================================
@@ -85,7 +82,6 @@ router.post('/settings/keys/:id/revoke', apiController.revokeKey);
 router.post('/settings/webhooks', apiController.createWebhook);
 router.post('/settings/webhooks/:id/delete', apiController.deleteWebhook);
 
-
 /**
  * ==============================================================================
  * V. ADMINISTRATION PANEL (Protected)
@@ -99,11 +95,12 @@ router.get('/admin', requireAdmin, adminController.getAdminDashboard);
 // B. Content Management (File Upload)
 // Uses 'upload.single' middleware (Multer) to process the multipart/form-data.
 // 'handleUploadError' is attached to catch file size limits or type errors.
-router.post('/admin/upload', 
-    requireAdmin, 
-    upload.single('coursePdf'), 
-    adminController.handleUpload, 
-    adminController.handleUploadError
+router.post(
+  '/admin/upload',
+  requireAdmin,
+  upload.single('coursePdf'),
+  adminController.handleUpload,
+  adminController.handleUploadError
 );
 
 // C. User Management Actions
@@ -115,10 +112,13 @@ router.post('/admin/users/:id/keys/:keyId/revoke', requireAdmin, adminController
 
 // Manage User Webhooks
 router.post('/admin/users/:id/webhooks', requireAdmin, adminController.createUserWebhook);
-router.post('/admin/users/:id/webhooks/:hookId/delete', requireAdmin, adminController.deleteUserWebhook);
+router.post(
+  '/admin/users/:id/webhooks/:hookId/delete',
+  requireAdmin,
+  adminController.deleteUserWebhook
+);
 
 // Critical Action: Delete User Account
 router.post('/admin/users/:id/delete', requireAdmin, adminController.deleteUser);
-
 
 export default router;

@@ -29,11 +29,11 @@ const BATCH_SIZE = 10;
  * @returns {string} The hex-encoded signature.
  */
 function signWebhook(secret, timestamp, body) {
-    const h = crypto.createHmac('sha256', secret);
-    h.update(String(timestamp));
-    h.update('.');
-    h.update(body);
-    return h.digest('hex');
+  const h = crypto.createHmac('sha256', secret);
+  h.update(String(timestamp));
+  h.update('.');
+  h.update(body);
+  return h.digest('hex');
 }
 
 /**
@@ -48,48 +48,51 @@ function signWebhook(secret, timestamp, body) {
  * @param {Object} payloadObj - The data payload to send.
  */
 export async function dispatchWebhook(userId, event, payloadObj) {
-    // 1. Prepare Payload
-    const payload = JSON.stringify({ event, data: payloadObj });
+  // 1. Prepare Payload
+  const payload = JSON.stringify({ event, data: payloadObj });
 
-    // 2. Fetch Active Targets
-    const hooks = db.prepare('SELECT * FROM webhooks WHERE user_id = ? AND active = 1').all(userId);
+  // 2. Fetch Active Targets
+  const hooks = db.prepare('SELECT * FROM webhooks WHERE user_id = ? AND active = 1').all(userId);
 
-    // 3. Process Dispatch (Fire-and-Forget)
-    // We use forEach here specifically to avoid 'await' blocking the loop.
-    hooks.forEach(async (hook) => {
-        const timestamp = Date.now();
-        const signature = signWebhook(hook.secret, timestamp, payload);
+  // 3. Process Dispatch (Fire-and-Forget)
+  // We use forEach here specifically to avoid 'await' blocking the loop.
+  hooks.forEach(async (hook) => {
+    const timestamp = Date.now();
+    const signature = signWebhook(hook.secret, timestamp, payload);
 
-        try {
-            // A. Attempt Delivery
-            await fetch(hook.url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Webhook-Timestamp': String(timestamp),
-                    'X-Webhook-Signature': signature,
-                    'X-Webhook-Event': event
-                },
-                body: payload
-            });
+    try {
+      // A. Attempt Delivery
+      await fetch(hook.url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Webhook-Timestamp': String(timestamp),
+          'X-Webhook-Signature': signature,
+          'X-Webhook-Event': event
+        },
+        body: payload
+      });
 
-            // B. Log Success (Delivered immediately)
-            db.prepare(`
+      // B. Log Success (Delivered immediately)
+      db.prepare(
+        `
                 INSERT INTO webhook_events 
                 (user_id, event, payload, created_at, delivered_at, attempts) 
                 VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1)
-            `).run(userId, event, payload);
-
-        } catch (e) {
-            // C. Log Failure (To be picked up by the retry worker)
-            // Note: 'delivered_at' is left NULL
-            db.prepare(`
+            `
+      ).run(userId, event, payload);
+    } catch (e) {
+      // C. Log Failure (To be picked up by the retry worker)
+      // Note: 'delivered_at' is left NULL
+      db.prepare(
+        `
                 INSERT INTO webhook_events 
                 (user_id, event, payload, created_at, attempts) 
                 VALUES (?, ?, ?, CURRENT_TIMESTAMP, 1)
-            `).run(userId, event, payload);
-        }
-    });
+            `
+      ).run(userId, event, payload);
+    }
+  });
 }
 
 /**
@@ -98,11 +101,11 @@ export async function dispatchWebhook(userId, event, payloadObj) {
  * and retries them up to a maximum threshold.
  */
 export function startWebhookWorker() {
-    setInterval(async () => {
-        try {
-            // 1. Fetch Failed Events
-            // Criteria: Not delivered yet, Active webhook, Attempts < Limit
-            const query = `
+  setInterval(async () => {
+    try {
+      // 1. Fetch Failed Events
+      // Criteria: Not delivered yet, Active webhook, Attempts < Limit
+      const query = `
                 SELECT 
                     we.id, we.user_id, we.event, we.payload, 
                     w.url, w.secret
@@ -114,50 +117,53 @@ export function startWebhookWorker() {
                 ORDER BY we.created_at ASC 
                 LIMIT ?
             `;
-            
-            const undelivered = db.prepare(query).all(MAX_RETRY_ATTEMPTS, BATCH_SIZE);
 
-            // 2. Process Retries
-            for (const row of undelivered) {
-                const timestamp = Date.now();
-                const signature = signWebhook(row.secret, timestamp, row.payload);
+      const undelivered = db.prepare(query).all(MAX_RETRY_ATTEMPTS, BATCH_SIZE);
 
-                try {
-                    // A. Retry Delivery
-                    await fetch(row.url, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Webhook-Timestamp': String(timestamp),
-                            'X-Webhook-Signature': signature,
-                            'X-Webhook-Event': row.event
-                        },
-                        body: row.payload
-                    });
+      // 2. Process Retries
+      for (const row of undelivered) {
+        const timestamp = Date.now();
+        const signature = signWebhook(row.secret, timestamp, row.payload);
 
-                    // B. Mark as Delivered on Success
-                    db.prepare(`
+        try {
+          // A. Retry Delivery
+          await fetch(row.url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Webhook-Timestamp': String(timestamp),
+              'X-Webhook-Signature': signature,
+              'X-Webhook-Event': row.event
+            },
+            body: row.payload
+          });
+
+          // B. Mark as Delivered on Success
+          db.prepare(
+            `
                         UPDATE webhook_events 
                         SET delivered_at = CURRENT_TIMESTAMP, 
                             attempts = attempts + 1 
                         WHERE id = ?
-                    `).run(row.id);
-
-                } catch (err) {
-                    // C. Increment Attempts on Failure
-                    // The worker will pick this up again in the next cycle if attempts < MAX
-                    db.prepare(`
+                    `
+          ).run(row.id);
+        } catch (err) {
+          // C. Increment Attempts on Failure
+          // The worker will pick this up again in the next cycle if attempts < MAX
+          db.prepare(
+            `
                         UPDATE webhook_events 
                         SET attempts = attempts + 1 
                         WHERE id = ?
-                    `).run(row.id);
-                }
-            }
-        } catch (workerError) {
-            // Prevent worker crash on unexpected DB errors
-            console.error('[WebhookWorker] Critical Error:', workerError);
+                    `
+          ).run(row.id);
         }
-    }, RETRY_INTERVAL_MS);
+      }
+    } catch (workerError) {
+      // Prevent worker crash on unexpected DB errors
+      console.error('[WebhookWorker] Critical Error:', workerError);
+    }
+  }, RETRY_INTERVAL_MS);
 
-    console.log(`[System] Webhook background worker started (Interval: ${RETRY_INTERVAL_MS}ms).`);
+  console.log(`[System] Webhook background worker started (Interval: ${RETRY_INTERVAL_MS}ms).`);
 }

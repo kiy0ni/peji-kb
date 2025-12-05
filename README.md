@@ -16,56 +16,56 @@ It is built to allow students and developers to centralize PDF course materials,
 8.  [API Documentation](https://www.google.com/search?q=%23api-documentation)
 9.  [License](https://www.google.com/search?q=%23license)
 
------
+---
 
 ## Key Features
 
 ### AI & Retrieval-Augmented Generation (RAG)
 
-  * **Contextual Chat:** Interact directly with PDF documents. The system extracts text from the current file and injects it into the AI model's context window to provide accurate, evidence-based answers.
-  * **Provider Agnostic:** Built on an Adapter Pattern, currently supporting **Ollama** (self-hosted) by default, with an architecture ready for OpenAI or Gemini integration.
-  * **Conversation History:** Maintains short-term memory of the chat session to support follow-up questions.
+- **Contextual Chat:** Interact directly with PDF documents. The system extracts text from the current file and injects it into the AI model's context window to provide accurate, evidence-based answers.
+- **Provider Agnostic:** Built on an Adapter Pattern, currently supporting **Ollama** (self-hosted) by default, with an architecture ready for OpenAI or Gemini integration.
+- **Conversation History:** Maintains short-term memory of the chat session to support follow-up questions.
 
 ### Content Management
 
-  * **Recursive File Explorer:** Automatically scans and indexes the `courses/` directory to build a navigable tree structure.
-  * **Integrated PDF Reader:** Features a distraction-free "Zen Mode" and preserves reading sessions.
-  * **Favorites System:** Quick access pinning for frequently used documents.
+- **Recursive File Explorer:** Automatically scans and indexes the `courses/` directory to build a navigable tree structure.
+- **Integrated PDF Reader:** Features a distraction-free "Zen Mode" and preserves reading sessions.
+- **Favorites System:** Quick access pinning for frequently used documents.
 
 ### Productivity Tools
 
-  * **Markdown Editor:** Integrated EasyMDE editor for taking notes linked specifically to each document.
-  * **Snippet Manager:** Dedicated interface for saving, copying, and managing code blocks.
-  * **Activity Telemetry:** Tracks reading time and site usage for personal productivity analytics.
+- **Markdown Editor:** Integrated EasyMDE editor for taking notes linked specifically to each document.
+- **Snippet Manager:** Dedicated interface for saving, copying, and managing code blocks.
+- **Activity Telemetry:** Tracks reading time and site usage for personal productivity analytics.
 
 ### Security & Administration
 
-  * **Hybrid Authentication:** Supports standard Session-based auth for browsers and API Key (SHA-256) auth for programmatic access.
-  * **Administration Panel:** Interface for user management, API key revocation, file uploads, and account deletion.
-  * **Hardened Security:** Implements CSRF Protection, Content Security Policy (CSP), Rate Limiting, and strict Input Sanitization.
-  * **Webhooks:** Event-driven architecture allowing external systems to subscribe to user activities (e.g., `reading.started`, `note.updated`).
+- **Hybrid Authentication:** Supports standard Session-based auth for browsers and API Key (SHA-256) auth for programmatic access.
+- **Administration Panel:** Interface for user management, API key revocation, file uploads, and account deletion.
+- **Hardened Security:** Implements CSRF Protection, Content Security Policy (CSP), Rate Limiting, and strict Input Sanitization.
+- **Webhooks:** Event-driven architecture allowing external systems to subscribe to user activities (e.g., `reading.started`, `note.updated`).
 
------
+---
 
 ## Technology Stack
 
-  * **Runtime:** Node.js (v18+)
-  * **Framework:** Express.js
-  * **Database:** SQLite (using `better-sqlite3` with Write-Ahead Logging)
-  * **Frontend:** Server-Side Rendering with EJS, Vanilla JavaScript (ES Modules), CSS Grid.
-  * **PDF Engine:** `pdfjs-dist` (Text Extraction) and native browser embedding.
-  * **Security:** `bcryptjs` (Password Hashing), `csurf` (CSRF), `helmet` concepts (CSP headers).
+- **Runtime:** Node.js (v18+)
+- **Framework:** Express.js
+- **Database:** SQLite (using `better-sqlite3` with Write-Ahead Logging)
+- **Frontend:** Server-Side Rendering with EJS, Vanilla JavaScript (ES Modules), CSS Grid.
+- **PDF Engine:** `pdfjs-dist` (Text Extraction) and native browser embedding.
+- **Security:** `bcryptjs` (Password Hashing), `csurf` (CSRF), `helmet` concepts (CSP headers).
 
------
+---
 
 ## Prerequisites
 
-  * **Node.js**: Version 18.0.0 or higher.
-  * **Ollama**: Required for local AI chat functionality.
-      * Recommended model: `mistral` or `llama3`.
-      * Ensure the Ollama server is running (default: `http://127.0.0.1:11434`).
+- **Node.js**: Version 18.0.0 or higher.
+- **Ollama**: Required for local AI chat functionality.
+  - Recommended model: `mistral` or `llama3`.
+  - Ensure the Ollama server is running (default: `http://127.0.0.1:11434`).
 
------
+---
 
 ## Installation
 
@@ -101,7 +101,7 @@ It is built to allow students and developers to centralize PDF course materials,
 
     The application will be accessible at `http://localhost:3000`.
 
------
+---
 
 ## Configuration
 
@@ -126,7 +126,7 @@ AI_API_URL=http://127.0.0.1:11434/api/chat
 # AI_SYSTEM_PROMPT="You are a precise technical assistant..."
 ```
 
------
+---
 
 ## Project Architecture
 
@@ -149,7 +149,7 @@ peji-kb/
 └── openapi.yaml          # API Specification
 ```
 
------
+---
 
 ## Usage Guide
 
@@ -166,10 +166,10 @@ peji-kb/
 2.  Open the Tools Panel (Sidebar) and select the **AI Chat** tab.
 3.  Ask a question regarding the document.
 4.  The server performs the following:
-      * Extracts text from the PDF.
-      * Truncates context to fit the token window.
-      * Queries the local LLM via the Adapter.
-      * Returns the response and stores the history.
+    - Extracts text from the PDF.
+    - Truncates context to fit the token window.
+    - Queries the local LLM via the Adapter.
+    - Returns the response and stores the history.
 
 ### Managing API Keys
 
@@ -178,14 +178,14 @@ peji-kb/
 3.  Store the key immediately, as it is only shown once.
 4.  Use this key in the `X-API-Key` header for external scripts.
 
------
+---
 
 ## API Documentation
 
 PEJI-KB exposes a fully documented REST API compliant with the OpenAPI 3.1.0 specification.
 
-  * **Spec File:** See `openapi.yaml` in the root directory.
-  * **Base URL:** `/api/v1`
+- **Spec File:** See `openapi.yaml` in the root directory.
+- **Base URL:** `/api/v1`
 
 ### Example: Retrieve User Identity
 
@@ -213,7 +213,7 @@ curl -X GET http://localhost:3000/api/v1/me \
 }
 ```
 
------
+---
 
 ## License
 

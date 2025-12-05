@@ -33,43 +33,43 @@ const HEARTBEAT_INTERVAL_MS = 15000; // 15 Seconds
  * @param {boolean} [requireVisibility=false] - If true, pings are only sent when the tab is visible.
  */
 function startSessionHeartbeat(endpoint, payload, requireVisibility = false) {
-    
-    // 1. SEND START SIGNAL
-    // We catch errors silently to avoid disrupting the user experience with console noise
-    // for non-critical telemetry failures.
-    postJSON(endpoint, { ...payload, action: 'start' }).catch(() => {});
+  // 1. SEND START SIGNAL
+  // We catch errors silently to avoid disrupting the user experience with console noise
+  // for non-critical telemetry failures.
+  postJSON(endpoint, { ...payload, action: 'start' }).catch(() => {});
 
-    // 2. START HEARTBEAT (PING)
-    const timerId = setInterval(() => {
-        // Optimization: For reading sessions, we only count time if the user is actually looking at the tab.
-        if (requireVisibility && document.visibilityState !== 'visible') {
-            return;
-        }
-        postJSON(endpoint, { ...payload, action: 'ping' }).catch(() => {});
-    }, HEARTBEAT_INTERVAL_MS);
+  // 2. START HEARTBEAT (PING)
+  const timerId = setInterval(() => {
+    // Optimization: For reading sessions, we only count time if the user is actually looking at the tab.
+    if (requireVisibility && document.visibilityState !== 'visible') {
+      return;
+    }
+    postJSON(endpoint, { ...payload, action: 'ping' }).catch(() => {});
+  }, HEARTBEAT_INTERVAL_MS);
 
-    // 3. DEFINE STOP LOGIC
-    const terminateSession = () => {
-        // Stop the heartbeat to prevent memory leaks or unnecessary requests
-        try { clearInterval(timerId); } catch (_) {}
-        
-        // Send the final 'stop' signal using Beacon API (via utils options)
-        // Beacon is critical here ensures the request is sent even if the tab is closing.
-        postJSON(endpoint, { ...payload, action: 'stop' }, { beacon: true });
-    };
+  // 3. DEFINE STOP LOGIC
+  const terminateSession = () => {
+    // Stop the heartbeat to prevent memory leaks or unnecessary requests
+    try {
+      clearInterval(timerId);
+    } catch (_) {}
 
-    // 4. BIND TERMINATION EVENTS
-    // Trigger stop when the user navigates away or closes the tab
-    window.addEventListener('pagehide', terminateSession);
-    
-    // Trigger stop when the user switches tabs/minimizes (Strict tracking)
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden') {
-            terminateSession();
-        }
-    });
+    // Send the final 'stop' signal using Beacon API (via utils options)
+    // Beacon is critical here ensures the request is sent even if the tab is closing.
+    postJSON(endpoint, { ...payload, action: 'stop' }, { beacon: true });
+  };
+
+  // 4. BIND TERMINATION EVENTS
+  // Trigger stop when the user navigates away or closes the tab
+  window.addEventListener('pagehide', terminateSession);
+
+  // Trigger stop when the user switches tabs/minimizes (Strict tracking)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      terminateSession();
+    }
+  });
 }
-
 
 /**
  * ==============================================================================
@@ -83,28 +83,27 @@ function startSessionHeartbeat(endpoint, payload, requireVisibility = false) {
  * - Reading Session: Tracks time spent specifically on document pages.
  */
 export function initActivityTracking() {
-    // Detect context
-    const metaPathInput = document.getElementById('meta-path');
-    const isFilePage = !!metaPathInput;
+  // Detect context
+  const metaPathInput = document.getElementById('meta-path');
+  const isFilePage = !!metaPathInput;
 
-    // --- A. GLOBAL SITE TRACKING ---
-    // Tracks which route the user is currently visiting.
-    const currentRoute = window.location.pathname + window.location.search;
-    
+  // --- A. GLOBAL SITE TRACKING ---
+  // Tracks which route the user is currently visiting.
+  const currentRoute = window.location.pathname + window.location.search;
+
+  startSessionHeartbeat(
+    '/api/v1/activity/site',
+    { route: currentRoute },
+    false // Site tracking continues even in background (until hidden/stopped)
+  );
+
+  // --- B. READING SESSION TRACKING ---
+  // Only active when the user is viewing a specific file (Reader Mode).
+  if (isFilePage && metaPathInput.value) {
     startSessionHeartbeat(
-        '/api/v1/activity/site', 
-        { route: currentRoute },
-        false // Site tracking continues even in background (until hidden/stopped)
+      '/api/v1/activity/reading',
+      { path: metaPathInput.value },
+      true // Reading tracking requires the tab to be visible (Active reading)
     );
-
-    // --- B. READING SESSION TRACKING ---
-    // Only active when the user is viewing a specific file (Reader Mode).
-    if (isFilePage && metaPathInput.value) {
-        
-        startSessionHeartbeat(
-            '/api/v1/activity/reading',
-            { path: metaPathInput.value },
-            true // Reading tracking requires the tab to be visible (Active reading)
-        );
-    }
+  }
 }

@@ -39,68 +39,67 @@ const MIN_TEXT_THRESHOLD = 50;
  * @throws {Error} If the file does not exist.
  */
 export async function extractPdfText(absolutePath) {
-    // 1. Validation: Ensure the file exists before attempting processing
-    if (!fs.existsSync(absolutePath)) {
-        throw new Error(`File not found at path: ${absolutePath}`);
+  // 1. Validation: Ensure the file exists before attempting processing
+  if (!fs.existsSync(absolutePath)) {
+    throw new Error(`File not found at path: ${absolutePath}`);
+  }
+
+  try {
+    // 2. Data Preparation: Read file into a Uint8Array buffer
+    // PDF.js requires a TypedArray (Uint8Array) rather than a standard Node Buffer.
+    const buffer = fs.readFileSync(absolutePath);
+    const uint8Array = new Uint8Array(buffer);
+
+    // 3. Document Loading & Configuration
+    // CRITICAL CONFIGURATION:
+    // - disableWorker: true -> Forces execution on the main thread.
+    //   This is necessary in Node.js to avoid "Invalid workerSrc type" errors.
+    // - isEvalSupported: false -> Security measure to disable code evaluation.
+    const loadingTask = pdfjsLib.getDocument({
+      data: uint8Array,
+      disableWorker: true,
+      isEvalSupported: false
+    });
+
+    const pdfDocument = await loadingTask.promise;
+
+    let fullText = '';
+
+    // Determine the loop limit (actual pages vs safety limit)
+    const pagesToProcess = Math.min(pdfDocument.numPages, MAX_PAGES_TO_SCAN);
+
+    // 4. Page Iteration and Extraction
+    for (let i = 1; i <= pagesToProcess; i++) {
+      // Get page reference
+      const page = await pdfDocument.getPage(i);
+
+      // Extract text content items
+      const textContent = await page.getTextContent();
+
+      // Reconstruct text from the content items.
+      // Items are often fragmented; joining with a space preserves basic readability.
+      const pageText = textContent.items.map((item) => item.str).join(' ');
+
+      // Append to full text if content exists
+      if (pageText.trim().length > 0) {
+        fullText += `\n--- PAGE ${i} ---\n\n${pageText}`;
+      }
     }
 
-    try {
-        // 2. Data Preparation: Read file into a Uint8Array buffer
-        // PDF.js requires a TypedArray (Uint8Array) rather than a standard Node Buffer.
-        const buffer = fs.readFileSync(absolutePath);
-        const uint8Array = new Uint8Array(buffer);
-
-        // 3. Document Loading & Configuration
-        // CRITICAL CONFIGURATION:
-        // - disableWorker: true -> Forces execution on the main thread.
-        //   This is necessary in Node.js to avoid "Invalid workerSrc type" errors.
-        // - isEvalSupported: false -> Security measure to disable code evaluation.
-        const loadingTask = pdfjsLib.getDocument({
-            data: uint8Array,
-            disableWorker: true,
-            isEvalSupported: false
-        });
-
-        const pdfDocument = await loadingTask.promise;
-
-        let fullText = '';
-        
-        // Determine the loop limit (actual pages vs safety limit)
-        const pagesToProcess = Math.min(pdfDocument.numPages, MAX_PAGES_TO_SCAN);
-
-        // 4. Page Iteration and Extraction
-        for (let i = 1; i <= pagesToProcess; i++) {
-            // Get page reference
-            const page = await pdfDocument.getPage(i);
-            
-            // Extract text content items
-            const textContent = await page.getTextContent();
-
-            // Reconstruct text from the content items.
-            // Items are often fragmented; joining with a space preserves basic readability.
-            const pageText = textContent.items
-                .map(item => item.str)
-                .join(' ');
-
-            // Append to full text if content exists
-            if (pageText.trim().length > 0) {
-                fullText += `\n--- PAGE ${i} ---\n\n${pageText}`;
-            }
-        }
-
-        // 5. Result Verification
-        // Check if the extracted text meets the minimum threshold.
-        // If not, the PDF might be an image-only scan or encrypted.
-        if (!fullText || fullText.trim().length < MIN_TEXT_THRESHOLD) {
-            console.warn(`[PDF WARN] Extracted text is empty or insufficient (${fullText.length} chars).`);
-            return '[SYSTEM] The document appears to be empty, image-based, or protected. Native extraction failed.';
-        }
-
-        return fullText;
-
-    } catch (error) {
-        // Log the critical error for debugging purposes
-        console.error('[PDF ERROR] Critical failure in pdfjs-dist:', error);
-        return '[ERROR] Unable to read the PDF file due to an internal error.';
+    // 5. Result Verification
+    // Check if the extracted text meets the minimum threshold.
+    // If not, the PDF might be an image-only scan or encrypted.
+    if (!fullText || fullText.trim().length < MIN_TEXT_THRESHOLD) {
+      console.warn(
+        `[PDF WARN] Extracted text is empty or insufficient (${fullText.length} chars).`
+      );
+      return '[SYSTEM] The document appears to be empty, image-based, or protected. Native extraction failed.';
     }
+
+    return fullText;
+  } catch (error) {
+    // Log the critical error for debugging purposes
+    console.error('[PDF ERROR] Critical failure in pdfjs-dist:', error);
+    return '[ERROR] Unable to read the PDF file due to an internal error.';
+  }
 }

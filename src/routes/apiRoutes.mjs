@@ -26,7 +26,6 @@ import { requireApiKey, chatLimiter } from '../middlewares/authMiddleware.mjs';
 // --- 2. ROUTER INITIALIZATION ---
 const router = express.Router();
 
-
 /**
  * ==============================================================================
  * I. SECURITY MIDDLEWARE (Hybrid Authentication)
@@ -41,32 +40,31 @@ const router = express.Router();
  * @returns {Function} Express middleware function.
  */
 const requireSessionOrKey = (scopes) => {
-    return (req, res, next) => {
-        // STRATEGY 1: BROWSER SESSION
-        // If a valid session exists (user logged in via UI), pass through immediately.
-        if (req.session && req.session.user) {
-            req.user = req.session.user; // Standardize user object
-            return next();
-        }
+  return (req, res, next) => {
+    // STRATEGY 1: BROWSER SESSION
+    // If a valid session exists (user logged in via UI), pass through immediately.
+    if (req.session && req.session.user) {
+      req.user = req.session.user; // Standardize user object
+      return next();
+    }
 
-        // STRATEGY 2: API KEY (External Scripts/Tools)
-        // Check for headers to avoid crashing 'requireApiKey' if headers are missing.
-        const authHeader = req.headers.authorization || req.headers['x-api-key'];
+    // STRATEGY 2: API KEY (External Scripts/Tools)
+    // Check for headers to avoid crashing 'requireApiKey' if headers are missing.
+    const authHeader = req.headers.authorization || req.headers['x-api-key'];
 
-        if (!authHeader) {
-            // Case: No Session AND No API Key -> Clean Rejection (Avoids 500 errors)
-            return res.status(401).json({
-                success: false,
-                error: 'Unauthorized: Please log in or provide an API Key.'
-            });
-        }
+    if (!authHeader) {
+      // Case: No Session AND No API Key -> Clean Rejection (Avoids 500 errors)
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized: Please log in or provide an API Key.'
+      });
+    }
 
-        // Delegate validation to the dedicated API Key middleware
-        // This validates the key against the DB and checks scopes.
-        return requireApiKey(scopes)(req, res, next);
-    };
+    // Delegate validation to the dedicated API Key middleware
+    // This validates the key against the DB and checks scopes.
+    return requireApiKey(scopes)(req, res, next);
+  };
 };
-
 
 /**
  * ==============================================================================
@@ -75,7 +73,6 @@ const requireSessionOrKey = (scopes) => {
  */
 router.get('/me', requireSessionOrKey(['read:all']), apiController.getMe);
 
-
 /**
  * ==============================================================================
  * III. CONTENT DISCOVERY
@@ -83,7 +80,6 @@ router.get('/me', requireSessionOrKey(['read:all']), apiController.getMe);
  */
 router.get('/courses', requireSessionOrKey(['read:all']), apiController.getCourses);
 router.get('/files', requireSessionOrKey(['read:all']), apiController.getFileMetadata);
-
 
 /**
  * ==============================================================================
@@ -108,7 +104,6 @@ router.post('/data', requireSessionOrKey(['write:self']), apiController.saveComb
 router.get('/favorites', requireSessionOrKey(['read:all']), apiController.getFavorites);
 router.post('/favorites', requireSessionOrKey(['write:self']), apiController.toggleFavorite);
 
-
 /**
  * ==============================================================================
  * V. AI CHAT SYSTEM (RAG)
@@ -116,24 +111,16 @@ router.post('/favorites', requireSessionOrKey(['write:self']), apiController.tog
  * Protected by Rate Limiting to prevent LLM abuse.
  * Order: RateLimit -> Auth Check -> Controller.
  */
-router.get('/chat',
-    chatLimiter,
-    requireSessionOrKey(['read:all']),
-    chatController.getChatHistory
-);
+router.get('/chat', chatLimiter, requireSessionOrKey(['read:all']), chatController.getChatHistory);
 
-router.post('/chat',
-    chatLimiter,
-    requireSessionOrKey(['write:self']),
-    chatController.postChat
-);
+router.post('/chat', chatLimiter, requireSessionOrKey(['write:self']), chatController.postChat);
 
-router.delete('/chat',
-    chatLimiter,
-    requireSessionOrKey(['write:self']),
-    chatController.deleteChatHistory
+router.delete(
+  '/chat',
+  chatLimiter,
+  requireSessionOrKey(['write:self']),
+  chatController.deleteChatHistory
 );
-
 
 /**
  * ==============================================================================
@@ -142,7 +129,6 @@ router.delete('/chat',
  */
 router.post('/activity/reading', requireSessionOrKey(['write:self']), apiController.trackReading);
 router.post('/activity/site', requireSessionOrKey(['write:self']), apiController.trackSite);
-
 
 /**
  * ==============================================================================
@@ -160,6 +146,5 @@ router.delete('/webhooks/:id', requireSessionOrKey(['write:self']), apiControlle
 router.get('/keys', requireSessionOrKey(['read:all']), apiController.getKeys);
 router.post('/keys', requireSessionOrKey(['write:self']), apiController.createKey);
 router.post('/keys/:id/revoke', requireSessionOrKey(['write:self']), apiController.revokeKey);
-
 
 export default router;

@@ -18,10 +18,9 @@
 // --- 1. IMPORTS ---
 import db from '../config/database.mjs';
 
-// NOTE: Ensure this path points to where 'findKeyRecord' is actually defined 
+// NOTE: Ensure this path points to where 'findKeyRecord' is actually defined
 // (likely apiKeyService.mjs based on previous context, but kept as authService per input).
 import { findKeyRecord } from '../services/authService.mjs';
-
 
 /**
  * ==============================================================================
@@ -43,12 +42,12 @@ const GLOBAL_LIMIT = { windowMs: 60_000, max: 60 };
  * @returns {string} Unique identifier key.
  */
 function bucketKeyFromReq(req) {
-    if (req.session?.userId) return `sess:${req.session.userId}`;
-    
-    const apiKey = req.header('X-API-Key');
-    if (apiKey) return `key:${apiKey}`;
-    
-    return `ip:${req.ip}`;
+  if (req.session?.userId) return `sess:${req.session.userId}`;
+
+  const apiKey = req.header('X-API-Key');
+  if (apiKey) return `key:${apiKey}`;
+
+  return `ip:${req.ip}`;
 }
 
 /**
@@ -58,34 +57,34 @@ function bucketKeyFromReq(req) {
  * @returns {Object} Status object { limited, remaining, resetMs, current }.
  */
 function checkRateLimit(key, options = {}) {
-    const now = Date.now();
-    const windowMs = options.windowMs || GLOBAL_LIMIT.windowMs;
-    // Use specific limit if provided, otherwise fallback to global
-    const max = options.max || GLOBAL_LIMIT.max; 
-    
-    // Retrieve or initialize bucket
-    const bucket = rateBuckets.get(key) || { start: now, count: 0 };
-    
-    // Reset bucket if the time window has elapsed
-    if (now - bucket.start > windowMs) {
-        bucket.start = now; 
-        bucket.count = 0;
-    }
-    
-    // Increment counter
-    bucket.count += 1;
-    rateBuckets.set(key, bucket);
-    
-    // Calculate status
-    const remaining = Math.max(max - bucket.count, 0);
-    const resetTime = Math.ceil((bucket.start + windowMs - now) / 1000);
-    
-    return { 
-        limited: bucket.count > max, 
-        remaining, 
-        resetMs: resetTime, 
-        current: bucket.count // Exposed for debug/logging
-    };
+  const now = Date.now();
+  const windowMs = options.windowMs || GLOBAL_LIMIT.windowMs;
+  // Use specific limit if provided, otherwise fallback to global
+  const max = options.max || GLOBAL_LIMIT.max;
+
+  // Retrieve or initialize bucket
+  const bucket = rateBuckets.get(key) || { start: now, count: 0 };
+
+  // Reset bucket if the time window has elapsed
+  if (now - bucket.start > windowMs) {
+    bucket.start = now;
+    bucket.count = 0;
+  }
+
+  // Increment counter
+  bucket.count += 1;
+  rateBuckets.set(key, bucket);
+
+  // Calculate status
+  const remaining = Math.max(max - bucket.count, 0);
+  const resetTime = Math.ceil((bucket.start + windowMs - now) / 1000);
+
+  return {
+    limited: bucket.count > max,
+    remaining,
+    resetMs: resetTime,
+    current: bucket.count // Exposed for debug/logging
+  };
 }
 
 /**
@@ -94,41 +93,40 @@ function checkRateLimit(key, options = {}) {
  * * @param {Object} options - { windowMs: number, max: number }
  */
 export function rateLimit(options = {}) {
-    return (req, res, next) => {
-        const baseKey = bucketKeyFromReq(req);
-        // Namespace the key by path to verify limits per route (e.g., separate counters for login vs register)
-        const specificKey = `${baseKey}:${req.path}`;
-        
-        const rl = checkRateLimit(specificKey, options);
-        const limitUsed = options.max || GLOBAL_LIMIT.max;
+  return (req, res, next) => {
+    const baseKey = bucketKeyFromReq(req);
+    // Namespace the key by path to verify limits per route (e.g., separate counters for login vs register)
+    const specificKey = `${baseKey}:${req.path}`;
 
-        // Standard Rate Limit Headers
-        res.setHeader('X-RateLimit-Limit', String(limitUsed));
-        res.setHeader('X-RateLimit-Remaining', String(rl.remaining));
-        res.setHeader('X-RateLimit-Reset', String(rl.resetMs));
-        
-        if (rl.limited) {
-            // AUDIT LOG: Crucial for security monitoring
-            console.warn(`[RATE LIMIT] ⛔ BLOCKED: ${specificKey} (Count: ${rl.current}/${limitUsed})`);
-            
-            // JSON Response for APIs / AJAX
-            if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
-                return res.status(429).json({ error: `Too many requests. Try again in ${rl.resetMs}s.` });
-            }
-            
-            // HTML Response for Browsers
-            return res.status(429).render('pages/error', {
-                title: 'Too Many Requests',
-                message: `Please try again in ${rl.resetMs} seconds.`,
-                breadcrumbs: [],
-                showTree: false
-            });
-        }
-        
-        next();
-    };
+    const rl = checkRateLimit(specificKey, options);
+    const limitUsed = options.max || GLOBAL_LIMIT.max;
+
+    // Standard Rate Limit Headers
+    res.setHeader('X-RateLimit-Limit', String(limitUsed));
+    res.setHeader('X-RateLimit-Remaining', String(rl.remaining));
+    res.setHeader('X-RateLimit-Reset', String(rl.resetMs));
+
+    if (rl.limited) {
+      // AUDIT LOG: Crucial for security monitoring
+      console.warn(`[RATE LIMIT] ⛔ BLOCKED: ${specificKey} (Count: ${rl.current}/${limitUsed})`);
+
+      // JSON Response for APIs / AJAX
+      if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
+        return res.status(429).json({ error: `Too many requests. Try again in ${rl.resetMs}s.` });
+      }
+
+      // HTML Response for Browsers
+      return res.status(429).render('pages/error', {
+        title: 'Too Many Requests',
+        message: `Please try again in ${rl.resetMs} seconds.`,
+        breadcrumbs: [],
+        showTree: false
+      });
+    }
+
+    next();
+  };
 }
-
 
 /**
  * ==============================================================================
@@ -143,8 +141,7 @@ export const loginLimiter = rateLimit({ windowMs: 60_000, max: 5 });
 export const registerLimiter = rateLimit({ windowMs: 60_000, max: 3 });
 
 // Chat/AI: Prevents LLM abuse and cost overruns (10 requests/30s)
-export const chatLimiter = rateLimit({ windowMs: 30_000, max: 10 }); 
-
+export const chatLimiter = rateLimit({ windowMs: 30_000, max: 10 });
 
 /**
  * ==============================================================================
@@ -159,60 +156,59 @@ export const chatLimiter = rateLimit({ windowMs: 30_000, max: 10 });
  * * @param {Array<string>} scopesNeeded - List of required scopes (e.g., ['read:all', 'admin:all']).
  */
 export function requireApiKey(scopesNeeded = []) {
-    return (req, res, next) => {
-        
-        // 1. Session Fallback (Hybrid Auth)
-        // If user is logged in via browser, they implicitly have permissions (depending on logic).
-        if (req.session && req.session.userId) {
-             req.apiUser = { id: req.session.userId }; 
-             return next();
-        }
+  return (req, res, next) => {
+    // 1. Session Fallback (Hybrid Auth)
+    // If user is logged in via browser, they implicitly have permissions (depending on logic).
+    if (req.session && req.session.userId) {
+      req.apiUser = { id: req.session.userId };
+      return next();
+    }
 
-        // 2. Extract Key
-        const apiKey = req.header('X-API-Key');
-        const rec = findKeyRecord(apiKey); 
-        
-        // 3. Validate Key Existence
-        if (!rec) {
-            return res.status(401).json({ error: 'Unauthorized', code: 'invalid_api_key' });
-        }
+    // 2. Extract Key
+    const apiKey = req.header('X-API-Key');
+    const rec = findKeyRecord(apiKey);
 
-        // 4. Hydrate User Context
-        req.apiUser = db.prepare('SELECT id, username, role FROM users WHERE id = ?').get(rec.user_id);
-        req.apiKey = rec;
+    // 3. Validate Key Existence
+    if (!rec) {
+      return res.status(401).json({ error: 'Unauthorized', code: 'invalid_api_key' });
+    }
 
-        // 5. Secondary Rate Limit (Key-based)
-        // Hard limit of 100 req/min per API Key, regardless of the route.
-        const rl = checkRateLimit(`key:${apiKey}`, { max: 100, windowMs: 60000 });
-        if (rl.limited) {
-            return res.status(429).json({ error: 'Rate limit exceeded for this API Key' });
-        }
+    // 4. Hydrate User Context
+    req.apiUser = db.prepare('SELECT id, username, role FROM users WHERE id = ?').get(rec.user_id);
+    req.apiKey = rec;
 
-        // 6. Scope & Role Validation
-        const scopes = (rec.scopes || '').split(/\s+/);
-        
-        // Special Case: Admin-only routes
-        if (scopesNeeded.includes('admin:all')) {
-            if (req.apiUser.role !== 'admin') {
-                return res.status(403).json({ error: 'Forbidden: Admin role required' });
-            }
-        }
+    // 5. Secondary Rate Limit (Key-based)
+    // Hard limit of 100 req/min per API Key, regardless of the route.
+    const rl = checkRateLimit(`key:${apiKey}`, { max: 100, windowMs: 60000 });
+    if (rl.limited) {
+      return res.status(429).json({ error: 'Rate limit exceeded for this API Key' });
+    }
 
-        // General Case: Check if key possesses all required scopes
-        const ok = scopesNeeded.every(s => scopes.includes(s));
-        if (!ok) {
-            return res.status(403).json({ error: 'Forbidden', code: 'insufficient_scope' });
-        }
+    // 6. Scope & Role Validation
+    const scopes = (rec.scopes || '').split(/\s+/);
 
-        // 7. Update Usage Statistics (Fire-and-forget)
-        try { 
-            db.prepare('UPDATE api_keys SET last_used = CURRENT_TIMESTAMP WHERE id = ?').run(rec.id); 
-        } catch (e) {
-            // Ignore DB write errors to avoid blocking the request
-        }
+    // Special Case: Admin-only routes
+    if (scopesNeeded.includes('admin:all')) {
+      if (req.apiUser.role !== 'admin') {
+        return res.status(403).json({ error: 'Forbidden: Admin role required' });
+      }
+    }
 
-        next();
-    };
+    // General Case: Check if key possesses all required scopes
+    const ok = scopesNeeded.every((s) => scopes.includes(s));
+    if (!ok) {
+      return res.status(403).json({ error: 'Forbidden', code: 'insufficient_scope' });
+    }
+
+    // 7. Update Usage Statistics (Fire-and-forget)
+    try {
+      db.prepare('UPDATE api_keys SET last_used = CURRENT_TIMESTAMP WHERE id = ?').run(rec.id);
+    } catch (e) {
+      // Ignore DB write errors to avoid blocking the request
+    }
+
+    next();
+  };
 }
 
 /**
@@ -220,11 +216,11 @@ export function requireApiKey(scopesNeeded = []) {
  * Redirects unauthenticated users to the login page.
  */
 export const requireAuth = (req, res, next) => {
-    if (req.session.userId) {
-        next(); 
-    } else {
-        res.redirect('/login');
-    }
+  if (req.session.userId) {
+    next();
+  } else {
+    res.redirect('/login');
+  }
 };
 
 /**
@@ -232,21 +228,21 @@ export const requireAuth = (req, res, next) => {
  * Protects sensitive UI routes. Renders a 403 error page if unauthorized.
  */
 export const requireAdmin = (req, res, next) => {
-    // 1. Ensure Logged In
-    if (!req.session.userId) return res.redirect('/login');
-    
-    // 2. Verify Role
-    const user = db.prepare('SELECT role FROM users WHERE id = ?').get(req.session.userId);
-    
-    if (user && user.role === 'admin') {
-        next();
-    } else {
-        // Render user-friendly access denied page
-        res.status(403).render('pages/error', { 
-            title: 'Access Denied',
-            message: 'This area is restricted to administrators.',
-            showTree: false,
-            breadcrumbs: [] 
-        });
-    }
+  // 1. Ensure Logged In
+  if (!req.session.userId) return res.redirect('/login');
+
+  // 2. Verify Role
+  const user = db.prepare('SELECT role FROM users WHERE id = ?').get(req.session.userId);
+
+  if (user && user.role === 'admin') {
+    next();
+  } else {
+    // Render user-friendly access denied page
+    res.status(403).render('pages/error', {
+      title: 'Access Denied',
+      message: 'This area is restricted to administrators.',
+      showTree: false,
+      breadcrumbs: []
+    });
+  }
 };
