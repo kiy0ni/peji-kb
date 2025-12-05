@@ -19,7 +19,6 @@
 import db from '../config/database.mjs';
 
 // NOTE: Ensure this path points to where 'findKeyRecord' is actually defined
-// (likely apiKeyService.mjs based on previous context, but kept as authService per input).
 import { findKeyRecord } from '../services/authService.mjs';
 
 /**
@@ -27,13 +26,13 @@ import { findKeyRecord } from '../services/authService.mjs';
  * I. RATE LIMITING ENGINE (IN-MEMORY)
  * ==============================================================================
  * Simple sliding window implementation to prevent abuse.
- * For production with multiple instances, Redis should replace this Map.
+ * RELAXED CONFIGURATION: Adjusted for easier usage in production without aggressive blocking.
  */
 
 const rateBuckets = new Map();
 
-// Default configuration: 60 requests per minute
-const GLOBAL_LIMIT = { windowMs: 60_000, max: 60 };
+// Default configuration: 300 requests per minute (High tolerance)
+const GLOBAL_LIMIT = { windowMs: 60_000, max: 300 };
 
 /**
  * Identifies the client to apply limits to.
@@ -134,14 +133,14 @@ export function rateLimit(options = {}) {
  * ==============================================================================
  */
 
-// Login: Strict limit to prevent credential stuffing (5 attempts/min)
-export const loginLimiter = rateLimit({ windowMs: 60_000, max: 5 });
+// Login: Very relaxed limit (100 attempts/min) to avoid accidental lockouts
+export const loginLimiter = rateLimit({ windowMs: 60_000, max: 100 });
 
-// Register: Very strict to prevent account spam/botting (3 creations/min)
-export const registerLimiter = rateLimit({ windowMs: 60_000, max: 3 });
+// Register: Relaxed limit (100 creations/min)
+export const registerLimiter = rateLimit({ windowMs: 60_000, max: 100 });
 
-// Chat/AI: Prevents LLM abuse and cost overruns (10 requests/30s)
-export const chatLimiter = rateLimit({ windowMs: 30_000, max: 10 });
+// Chat/AI: High throughput (200 requests/30s) for fluid conversation
+export const chatLimiter = rateLimit({ windowMs: 30_000, max: 200 });
 
 /**
  * ==============================================================================
@@ -178,8 +177,8 @@ export function requireApiKey(scopesNeeded = []) {
     req.apiKey = rec;
 
     // 5. Secondary Rate Limit (Key-based)
-    // Hard limit of 100 req/min per API Key, regardless of the route.
-    const rl = checkRateLimit(`key:${apiKey}`, { max: 100, windowMs: 60000 });
+    // Relaxed limit of 1000 req/min per API Key
+    const rl = checkRateLimit(`key:${apiKey}`, { max: 1000, windowMs: 60000 });
     if (rl.limited) {
       return res.status(429).json({ error: 'Rate limit exceeded for this API Key' });
     }
