@@ -1,8 +1,8 @@
 # PEJI-KB
 
-PEJI-KB is a self-hosted knowledge base platform designed to organize educational resources, facilitate note-taking, and provide intelligent document interaction via local AI integration (Retrieval-Augmented Generation).
+PEJI-KB is a self-hosted knowledge base platform designed to organize educational resources, facilitate note-taking, and provide intelligent document interaction via AI integration (Retrieval-Augmented Generation).
 
-It is built to allow students and developers to centralize PDF course materials, manage code snippets, and interact with their documents using Large Language Models (LLMs) like Ollama, all within a secure, privacy-focused environment.
+It is built to allow students and developers to centralize PDF course materials, manage code snippets, and interact with their documents using Large Language Models (LLMs). It supports both **Local AI** (Ollama) for privacy and **Cloud AI** (OpenAI) for performance, in a flexible "Bring Your Own Key" (BYOK) architecture.
 
 ## Table of Contents
 
@@ -22,8 +22,10 @@ It is built to allow students and developers to centralize PDF course materials,
 
 ### AI & Retrieval-Augmented Generation (RAG)
 
-- **Contextual Chat:** Interact directly with PDF documents. The system extracts text from the current file and injects it into the AI model's context window to provide accurate, evidence-based answers.
-- **Provider Agnostic:** Built on an Adapter Pattern, currently supporting **Ollama** (self-hosted) by default, with an architecture ready for OpenAI or Gemini integration.
+- **Contextual Chat:** Interact directly with PDF documents. The system extracts text from the current file and injects it into the AI model's context window.
+- **Provider Agnostic (BYOK):** Built on an Adapter Pattern.
+  - **Server Defaults:** Admins can set a default provider.
+  - **User Overrides:** Each user can configure their own provider (**Ollama** or **OpenAI**) and API Keys via the Settings page.
 - **Conversation History:** Maintains short-term memory of the chat session to support follow-up questions.
 
 ### Content Management
@@ -40,10 +42,10 @@ It is built to allow students and developers to centralize PDF course materials,
 
 ### Security & Administration
 
-- **Hybrid Authentication:** Supports standard Session-based auth for browsers and API Key (SHA-256) auth for programmatic access.
+- **Hybrid Authentication:** Supports standard Session-based auth (persistent via SQLite) for browsers and API Key (SHA-256) auth for scripts.
 - **Administration Panel:** Interface for user management, API key revocation, file uploads, and account deletion.
-- **Hardened Security:** Implements CSRF Protection, Content Security Policy (CSP), Rate Limiting, and strict Input Sanitization.
-- **Webhooks:** Event-driven architecture allowing external systems to subscribe to user activities (e.g., `reading.started`, `note.updated`).
+- **Hardened Security:** Implements CSRF Protection, Content Security Policy (CSP), and Rate Limiting.
+- **CI/CD Pipeline:** Fully automated testing, linting, secret scanning, and semantic release workflow.
 
 ---
 
@@ -51,19 +53,20 @@ It is built to allow students and developers to centralize PDF course materials,
 
 - **Runtime:** Node.js (v18+)
 - **Framework:** Express.js
-- **Database:** SQLite (using `better-sqlite3` with Write-Ahead Logging)
+- **Database:** SQLite (using `better-sqlite3` + `connect-sqlite3` for sessions)
 - **Frontend:** Server-Side Rendering with EJS, Vanilla JavaScript (ES Modules), CSS Grid.
 - **PDF Engine:** `pdfjs-dist` (Text Extraction) and native browser embedding.
-- **Security:** `bcryptjs` (Password Hashing), `csurf` (CSRF), `helmet` concepts (CSP headers).
+- **Security:** `bcryptjs` (Hashing), `csurf` (CSRF), `helmet` concepts.
 
 ---
 
 ## Prerequisites
 
 - **Node.js**: Version 18.0.0 or higher.
-- **Ollama**: Required for local AI chat functionality.
+- **Ollama (Optional)**: Required only if you intend to use local AI models.
   - Recommended model: `mistral` or `llama3`.
-  - Ensure the Ollama server is running (default: `http://127.0.0.1:11434`).
+  - Default URL: `http://127.0.0.1:11434`.
+- **OpenAI API Key (Optional)**: Required if you or your users prefer using Cloud AI.
 
 ---
 
@@ -72,7 +75,7 @@ It is built to allow students and developers to centralize PDF course materials,
 1.  **Clone the repository**
 
     ```bash
-    git clone https://github.com/your-org/peji-kb.git
+    git clone [https://github.com/your-org/peji-kb.git](https://github.com/your-org/peji-kb.git)
     cd peji-kb
     ```
 
@@ -105,7 +108,8 @@ It is built to allow students and developers to centralize PDF course materials,
 
 ## Configuration
 
-Create a `.env` file at the project root with the following variables. Ensure secure secrets are used in production.
+Create a `.env` file at the project root.
+**Note:** AI variables defined here act as **Server Defaults**. Users can override them in their personal settings.
 
 ```ini
 # Server Configuration
@@ -117,16 +121,17 @@ APP_NAME="PEJI-KB"
 SESSION_SECRET=change_this_to_a_long_random_string
 ADMIN_CODE=SecretCodeToRegisterAsAdmin
 
-# AI Configuration (Ollama)
-AI_PROVIDER=ollama
-AI_MODEL=mistral
-AI_API_URL=http://127.0.0.1:11434/api/chat
+# Default AI Configuration (Fallback)
+AI_PROVIDER=ollama          # Options: 'ollama' or 'openai'
+AI_MODEL=mistral            # e.g., 'mistral', 'gpt-3.5-turbo'
+AI_API_URL=[http://127.0.0.1:11434/api/chat](http://127.0.0.1:11434/api/chat)  # Only for Ollama
+# AI_API_KEY=sk-...         # Optional: Global OpenAI key (not recommended for public servers)
 
-# Optional System Prompt Override
+# System Prompt
 # AI_SYSTEM_PROMPT="You are a precise technical assistant..."
-```
+````
 
----
+-----
 
 ## Project Architecture
 
@@ -135,7 +140,7 @@ The project follows a modular MVC (Model-View-Controller) architecture using ES 
 ```text
 peji-kb/
 ├── courses/              # Root directory for PDF content (auto-scanned)
-├── data/                 # SQLite database storage (knowledge.db)
+├── data/                 # SQLite database storage (knowledge.db & sessions.db)
 ├── src/
 │   ├── config/           # Database initialization and constants
 │   ├── controllers/      # Business logic (Auth, View, API, Chat, Admin)
@@ -149,7 +154,7 @@ peji-kb/
 └── openapi.yaml          # API Specification
 ```
 
----
+-----
 
 ## Usage Guide
 
@@ -158,34 +163,39 @@ peji-kb/
 1.  Navigate to `/register`.
 2.  Enter a username and password.
 3.  In the **Admin Code** field, enter the value defined in your `.env` file (`ADMIN_CODE`).
-4.  This grants access to the `/admin` dashboard for user and content management.
+4.  This grants access to the `/admin` dashboard.
+
+### Configuring AI (Bring Your Own Key)
+
+Users can configure their preferred AI provider individually:
+
+1.  Log in and go to **Settings**.
+2.  Locate the **AI Configuration** section.
+3.  Select a **Provider**:
+      * **Ollama (Local):** Specify your local URL (default: `http://localhost:11434`) and Model (e.g., `mistral`).
+      * **OpenAI (Cloud):** Provide your personal `sk-...` API Key and Model (e.g., `gpt-4o`).
+4.  Click **Save**. The chat interface will now use this configuration.
 
 ### Using the AI Chat
 
 1.  Navigate to a document via the file explorer.
 2.  Open the Tools Panel (Sidebar) and select the **AI Chat** tab.
-3.  Ask a question regarding the document.
-4.  The server performs the following:
-    - Extracts text from the PDF.
-    - Truncates context to fit the token window.
-    - Queries the local LLM via the Adapter.
-    - Returns the response and stores the history.
+3.  Ask a question. The system will retrieve context from the PDF and query the configured provider.
 
 ### Managing API Keys
 
 1.  Go to **Settings**.
-2.  Under the "Developer Tools" section, create a new API Key.
-3.  Store the key immediately, as it is only shown once.
-4.  Use this key in the `X-API-Key` header for external scripts.
+2.  Under "Developer Tools", create a new API Key.
+3.  Use this key in the `X-API-Key` header for external scripts or CI/CD integrations.
 
----
+-----
 
 ## API Documentation
 
 PEJI-KB exposes a fully documented REST API compliant with the OpenAPI 3.1.0 specification.
 
-- **Spec File:** See `openapi.yaml` in the root directory.
-- **Base URL:** `/api/v1`
+  - **Spec File:** See `openapi.yaml` in the root directory.
+  - **Base URL:** `/api/v1`
 
 ### Example: Retrieve User Identity
 
@@ -213,7 +223,7 @@ curl -X GET http://localhost:3000/api/v1/me \
 }
 ```
 
----
+-----
 
 ## License
 

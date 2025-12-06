@@ -193,6 +193,19 @@ const schema = `
       attempts INTEGER DEFAULT 0,
       FOREIGN KEY(user_id) REFERENCES users(id)
   );
+
+  -- ==========================================
+  -- F. USER PREFERENCES (BYOK AI)
+  -- ==========================================
+  CREATE TABLE IF NOT EXISTS user_ai_config (
+      user_id INTEGER PRIMARY KEY,
+      provider TEXT DEFAULT 'ollama', -- 'ollama', 'openai', 'mistral', etc.
+      model TEXT,                     -- 'gpt-4', 'llama3', etc.
+      api_url TEXT,                   -- Uniquement pour Ollama/Custom endpoints
+      api_key TEXT,                   -- Stocké en clair (Simple) ou chiffré (Mieux)
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(user_id) REFERENCES users(id)
+  );
 `;
 
 // --- 5. EXPORTED FUNCTIONS ---

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Knowledge Base API
-  version: 1.1.0
+  version: 1.2.0
   description: |
     REST API for courses, files, favorites, notes, snippets, AI Chat (RAG), activity, webhooks, and API key management.
 
@@ -22,6 +22,8 @@ tags:
     description: Access to courses, files, notes, snippets, and favorites.
   - name: AI Chat
     description: Interaction with the RAG (Retrieval-Augmented Generation) system.
+  - name: AI Configuration
+    description: Management of BYOK (Bring Your Own Key) AI providers.
   - name: Activity & Webhooks
     description: Tracking user activity and managing webhooks.
   - name: API Keys
@@ -119,6 +121,22 @@ components:
         created_at:
           type: string
           format: date-time
+    AIConfig:
+      type: object
+      properties:
+        provider:
+          type: string
+          enum: [ollama, openai]
+          description: The AI provider service.
+        model:
+          type: string
+          description: The model identifier (e.g. gpt-4, llama3).
+        api_url:
+          type: string
+          description: The base URL for the API (useful for Ollama).
+        api_key:
+          type: string
+          description: The API Key. Returned masked (sk-...) on GET requests.
     ApiKey:
       type: object
       properties:
@@ -421,6 +439,39 @@ paths:
       responses:
         '200':
           description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  # --- AI CONFIGURATION (BYOK) ---
+  /config/ai:
+    get:
+      tags: [AI Configuration]
+      summary: Get AI configuration
+      description: Retrieves the current user's AI provider settings (Key is masked).
+      security: [{ ApiKeyAuth: [read:all] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIConfig'
+    post:
+      tags: [AI Configuration]
+      summary: Save AI configuration
+      description: Updates the AI provider settings. Send "sk-..." to keep existing key.
+      security: [{ ApiKeyAuth: [write:self] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIConfig'
+      responses:
+        '200':
+          description: Saved successfully
           content:
             application/json:
               schema:

@@ -147,4 +147,13 @@ router.get('/keys', requireSessionOrKey(['read:all']), apiController.getKeys);
 router.post('/keys', requireSessionOrKey(['write:self']), apiController.createKey);
 router.post('/keys/:id/revoke', requireSessionOrKey(['write:self']), apiController.revokeKey);
 
+/**
+ * ==============================================================================
+ * VIII. AI CONFIGURATION (BYOK)
+ * ==============================================================================
+ * Endpoints for managing user-specific AI provider settings.
+ */
+router.get('/config/ai', requireSessionOrKey(['read:all']), apiController.getAIConfig);
+router.post('/config/ai', requireSessionOrKey(['write:self']), apiController.saveAIConfig);
+
 export default router;
