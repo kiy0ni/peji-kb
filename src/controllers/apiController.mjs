@@ -595,3 +595,86 @@ export const revokeKey = (req, res) => {
   if (req.session) res.redirect('/settings');
   else res.json({ success: true });
 };
+
+/**
+ * ==============================================================================
+ * VIII. AI CONFIGURATION (BYOK)
+ * ==============================================================================
+ */
+
+/**
+ * GET /api/v1/config/ai
+ * Retrieves the current user's AI configuration (Provider, Model, URL).
+ * NOTE: The API Key is partially masked for security.
+ */
+export const getAIConfig = (req, res) => {
+  const userId = getUserId(req);
+
+  const conf = db
+    .prepare('SELECT provider, model, api_url, api_key FROM user_ai_config WHERE user_id = ?')
+    .get(userId);
+
+  if (conf) {
+    // Security: Never return the full key. Show "sk-..." or nothing.
+    const maskedKey = conf.api_key ? `sk-...${conf.api_key.slice(-4)}` : '';
+
+    res.json({
+      provider: conf.provider,
+      model: conf.model,
+      api_url: conf.api_url,
+      api_key: maskedKey
+    });
+  } else {
+    // Default fallback state
+    res.json({
+      provider: 'ollama',
+      model: '',
+      api_url: ''
+    });
+  }
+};
+
+/**
+ * POST /api/v1/config/ai
+ * Updates or creates the AI configuration for the authenticated user.
+ */
+export const saveAIConfig = (req, res) => {
+  const userId = getUserId(req);
+  const { provider, model, api_url, api_key } = req.body;
+
+  // 1. Validation
+  if (!['ollama', 'openai'].includes(provider)) {
+    return jsonError(res, 400, 'Invalid provider. Must be "ollama" or "openai".', 'bad_provider');
+  }
+
+  try {
+    // 2. Key Handling Logic
+    // If the user sends a masked key ("sk-..."), it means they didn't change it.
+    // In that case, we keep the existing key from the database.
+    let finalKey = api_key;
+    const existing = db.prepare('SELECT api_key FROM user_ai_config WHERE user_id = ?').get(userId);
+
+    if (api_key && api_key.startsWith('sk-...') && existing) {
+      finalKey = existing.api_key;
+    }
+
+    // 3. Upsert (Insert or Update)
+    db.prepare(
+      `
+            INSERT INTO user_ai_config (user_id, provider, model, api_url, api_key)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(user_id) DO UPDATE SET
+                provider = excluded.provider,
+                model = excluded.model,
+                api_url = excluded.api_url,
+                api_key = excluded.api_key,
+                updated_at = CURRENT_TIMESTAMP
+        `
+    ).run(userId, provider, model || null, api_url || null, finalKey || null);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[API] Failed to save AI Config:', err);
+    res.status(500).json({ error: 'Failed to save settings' });
+  }
+};

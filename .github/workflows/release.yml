@@ -43,6 +43,7 @@ jobs:
 
       - name: Configure Git Identity
         run: |
+
           git config user.name "kiy0ni CI"
           git config user.email "sachapastor34@gmail.com"
 
