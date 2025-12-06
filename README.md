@@ -129,9 +129,9 @@ AI_API_URL=[http://127.0.0.1:11434/api/chat](http://127.0.0.1:11434/api/chat)  #
 
 # System Prompt
 # AI_SYSTEM_PROMPT="You are a precise technical assistant..."
-````
+```
 
------
+---
 
 ## Project Architecture
 
@@ -154,7 +154,7 @@ peji-kb/
 └── openapi.yaml          # API Specification
 ```
 
------
+---
 
 ## Usage Guide
 
@@ -172,8 +172,8 @@ Users can configure their preferred AI provider individually:
 1.  Log in and go to **Settings**.
 2.  Locate the **AI Configuration** section.
 3.  Select a **Provider**:
-      * **Ollama (Local):** Specify your local URL (default: `http://localhost:11434`) and Model (e.g., `mistral`).
-      * **OpenAI (Cloud):** Provide your personal `sk-...` API Key and Model (e.g., `gpt-4o`).
+    - **Ollama (Local):** Specify your local URL (default: `http://localhost:11434`) and Model (e.g., `mistral`).
+    - **OpenAI (Cloud):** Provide your personal `sk-...` API Key and Model (e.g., `gpt-4o`).
 4.  Click **Save**. The chat interface will now use this configuration.
 
 ### Using the AI Chat
@@ -188,14 +188,14 @@ Users can configure their preferred AI provider individually:
 2.  Under "Developer Tools", create a new API Key.
 3.  Use this key in the `X-API-Key` header for external scripts or CI/CD integrations.
 
------
+---
 
 ## API Documentation
 
 PEJI-KB exposes a fully documented REST API compliant with the OpenAPI 3.1.0 specification.
 
-  - **Spec File:** See `openapi.yaml` in the root directory.
-  - **Base URL:** `/api/v1`
+- **Spec File:** See `openapi.yaml` in the root directory.
+- **Base URL:** `/api/v1`
 
 ### Example: Retrieve User Identity
 
@@ -223,7 +223,7 @@ curl -X GET http://localhost:3000/api/v1/me \
 }
 ```
 
------
+---
 
 ## License
 
