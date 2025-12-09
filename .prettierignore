@@ -2,6 +2,7 @@ node_modules/
 coverage/
 dist/
 public/vendor/
+public/favicon/
 package-lock.json
 *.min.js
 *.sarif
