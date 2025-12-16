@@ -1,6 +1,6 @@
 {
   "name": "peji-kb",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Your personal, self-hosted knowledge base.",
   "main": "server.mjs",
   "scripts": {
