@@ -642,9 +642,14 @@ export const saveAIConfig = (req, res) => {
   const userId = getUserId(req);
   const { provider, model, api_url, api_key } = req.body;
 
-  // 1. Validation
-  if (!['ollama', 'openai'].includes(provider)) {
-    return jsonError(res, 400, 'Invalid provider. Must be "ollama" or "openai".', 'bad_provider');
+  // 1. Validation - ALLOWED: gemini
+  if (!['ollama', 'openai', 'gemini'].includes(provider)) {
+    return jsonError(
+      res,
+      400,
+      'Invalid provider. Must be "ollama", "openai" or "gemini".',
+      'bad_provider'
+    );
   }
 
   try {

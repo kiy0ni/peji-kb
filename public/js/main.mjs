@@ -17,7 +17,7 @@
 import { initActivityTracking } from './modules/activity.mjs';
 
 // User Interface & Layout Management
-import { initSidebar, initLayout, initTabs, initHistory } from './modules/ui.mjs';
+import { initSidebar, initLayout, initTabs, initHistory, initResizer } from './modules/ui.mjs';
 
 // Core Functionality (Markdown Editor)
 import { initEditor } from './modules/editor.mjs';
@@ -46,6 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initSidebar();
   initLayout();
   initHistory();
+  initResizer();
 
   // ==========================================================================
   // PHASE 2: CORE COMPONENTS (EDITOR)
