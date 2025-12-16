@@ -91,7 +91,7 @@ export async function generateAIResponse(userId, docPath, userContent) {
   const cachedRecord = db.prepare('SELECT content FROM document_cache WHERE path = ?').get(docPath);
 
   if (cachedRecord) {
-    console.log(`[RAG Service] Cache hit for: ${docPath}`);
+    // console.log(`[RAG Service] Cache hit for: ${docPath}`);
     contextText = cachedRecord.content;
   } else {
     console.log(`[RAG Service] Cache miss. Extracting content for: ${docPath}`);

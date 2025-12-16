@@ -278,3 +278,50 @@ export function initHistory() {
     }
   }
 }
+
+/**
+ * Initializes the resizable handle logic for the Tools Panel (Desktop only).
+ * - Aborts execution on mobile devices (viewport <= 768px) to prevent layout conflicts.
+ * - Manages mouse drag events to dynamically update the `--tools-width` CSS variable.
+ * - Enforces min/max width constraints and prevents text selection during resizing.
+ */
+export function initResizer() {
+  if (window.innerWidth <= 768) return;
+
+  const handle = document.getElementById('resizerHandle');
+  const body = document.body;
+
+  if (!handle) return;
+
+  let isResizing = false;
+
+  handle.addEventListener('mousedown', (e) => {
+    isResizing = true;
+
+    e.preventDefault();
+
+    handle.classList.add('is-resizing');
+    body.classList.add('is-resizing');
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', stopResize);
+  });
+
+  function handleMouseMove(e) {
+    if (!isResizing) return;
+
+    const newWidth = window.innerWidth - e.clientX;
+
+    if (newWidth > 250 && newWidth < 800) {
+      document.documentElement.style.setProperty('--tools-width', `${newWidth}px`);
+    }
+  }
+
+  function stopResize() {
+    isResizing = false;
+    handle.classList.remove('is-resizing');
+    body.classList.remove('is-resizing');
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', stopResize);
+  }
+}

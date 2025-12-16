@@ -13,6 +13,7 @@
  * ==============================================================================
  */
 
+import { GoogleGenAI } from '@google/genai';
 // import fetch from 'node-fetch'; // Uncomment if using Node.js < 18
 
 /**
@@ -29,7 +30,7 @@ export async function askAI(messages, config) {
   const provider = config.provider || 'ollama';
   const model = config.model || 'mistral';
 
-  console.log(`[AI MANAGER] Dispatching request to provider: ${provider} (Model: ${model})...`);
+  // console.log(`[AI MANAGER] Dispatching request to provider: ${provider} (Model: ${model})...`);
 
   // 2. Dispatch Strategy (Adapter Pattern)
   switch (provider) {
@@ -39,8 +40,8 @@ export async function askAI(messages, config) {
     case 'openai':
       return await _callOpenAI(messages, config);
 
-    // Future Implementations:
-    // case 'gemini': return await _callGemini(messages, config);
+    case 'gemini':
+      return await _callGemini(messages, config);
 
     default:
       throw new Error(`[AI MANAGER] Unsupported AI Provider: ${provider}`);
@@ -69,7 +70,6 @@ async function _callOllama(messages, config) {
 
   try {
     // 1. Construct the Payload
-    // We disable streaming ('stream: false') to simplify the response handling for V1.
     const payload = {
       model: model,
       messages: messages,
@@ -98,10 +98,7 @@ async function _callOllama(messages, config) {
     // Return only the content string to maintain the agnostic interface contract
     return data.message.content;
   } catch (error) {
-    // Log the technical error for server-side debugging
-    console.error('[AI ADAPTER] Ollama Connection Error:', error);
-
-    // Return a safe, user-facing error message (Fail Gracefully)
+    // console.error('[AI ADAPTER] Ollama Connection Error:', error);
     return '⚠️ Error: Unable to reach local AI service. Please verify that Ollama is running.';
   }
 }
@@ -153,7 +150,59 @@ async function _callOpenAI(messages, config) {
     const data = await response.json();
     return data.choices[0].message.content;
   } catch (error) {
-    console.error('[AI ADAPTER] OpenAI Connection Error:', error);
+    // console.error('[AI ADAPTER] OpenAI Connection Error:', error);
     return `⚠️ Error connecting to OpenAI: ${error.message}`;
+  }
+}
+
+/**
+ * Adapter for Google Gemini.
+ * Uses the official @google/genai SDK (v1 beta).
+ *
+ * @param {Array<Object>} messages - The conversation history.
+ * @param {Object} config - Configuration containing apiKey and model.
+ * @returns {Promise<string>} The AI response text.
+ * @private
+ */
+async function _callGemini(messages, config) {
+  if (!config.apiKey) {
+    throw new Error('Gemini Provider requires an API Key.');
+  }
+
+  try {
+    const client = new GoogleGenAI({ apiKey: config.apiKey });
+
+    // 1. Message Transformation
+    // Gemini SDK separates the System Instruction from the conversation history.
+    // It also expects roles to be 'user' or 'model' (not 'assistant').
+    let systemInstruction = undefined;
+    const conversation = [];
+
+    for (const msg of messages) {
+      if (msg.role === 'system') {
+        systemInstruction = msg.content;
+      } else {
+        conversation.push({
+          role: msg.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: msg.content }]
+        });
+      }
+    }
+
+    // 2. Execute API Call
+    // Default model fallback is gemini-1.5-flash if not specified
+    const response = await client.models.generateContent({
+      model: config.model || 'gemini-1.5-flash',
+      config: {
+        systemInstruction: systemInstruction
+      },
+      contents: conversation
+    });
+
+    // 3. Return Text
+    return response.text();
+  } catch (error) {
+    // console.error('[AI ADAPTER] Gemini Connection Error:', error);
+    return `⚠️ Error connecting to Gemini: ${error.message}`;
   }
 }
