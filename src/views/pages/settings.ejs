@@ -71,6 +71,44 @@
     </a>
   <% } %>
 
+  <section class="kb-card-wrapper ai-config-wrapper">
+    <div class="admin-card dev-card-inner">
+      <h2><i class="ph ph-robot"></i> AI Configuration</h2>
+      <p class="dev-card-desc">Choose your brain. Use a local Ollama instance or an external provider like OpenAI.</p>
+
+      <form id="aiConfigForm" class="dev-form" style="flex-direction: column; align-items: stretch;">
+          
+          <div class="form-group" style="margin-bottom:12px;">
+              <label class="form-label">Provider</label>
+              <select name="provider" id="aiProvider" class="form-input">
+                  <option value="ollama">Ollama (Local)</option>
+                  <option value="openai">OpenAI</option>
+                  <option value="gemini">Google Gemini</option>
+              </select>
+          </div>
+
+          <div class="form-group" style="margin-bottom:12px;">
+              <label class="form-label">Model Name</label>
+              <input type="text" name="model" id="aiModel" class="form-input" placeholder="e.g. mistral, llama3, gpt-3.5-turbo">
+          </div>
+
+          <div id="field-url" class="form-group" style="margin-bottom:12px;">
+              <label class="form-label">API URL</label>
+              <input type="url" name="api_url" id="aiUrl" class="form-input" placeholder="http://127.0.0.1:11434/api/chat">
+              <p class="form-hint">For Ollama only. Default is localhost:11434.</p>
+          </div>
+
+          <div id="field-key" class="form-group" style="margin-bottom:12px; display:none;">
+              <label class="form-label">API Key</label>
+              <input type="password" name="api_key" id="aiKey" class="form-input" placeholder="sk-...">
+          </div>
+
+          <button type="submit" class="btn-primary btn-sm" id="btnSaveAI">Save AI Settings</button>
+          <span id="aiSaveMsg" style="font-size:12px; margin-left:10px; color:green; opacity:0; transition:opacity 0.3s;">Saved!</span>
+      </form>
+    </div>
+  </section>
+
 
   <div class="dev-tools-grid">
 
@@ -195,21 +233,102 @@
 <script nonce="<%= scriptNonce %>">
   (function() {
     // --- 5.1. Revoke Key Confirmation ---
-    // Attaches a 'submit' event listener to all revoke key forms to display a confirmation dialog.
     document.querySelectorAll('.form-revoke-key').forEach(f => {
       f.addEventListener('submit', (e) => {
-        // Prevent submission if the user clicks 'Cancel'
         if (!confirm('Are you sure you want to revoke this API key?')) e.preventDefault();
       });
     });
 
     // --- 5.2. Delete Webhook Confirmation ---
-    // Attaches a 'submit' event listener to all delete webhook forms to display a confirmation dialog.
     document.querySelectorAll('.form-delete-webhook').forEach(f => {
       f.addEventListener('submit', (e) => {
-        // Prevent submission if the user clicks 'Cancel'
         if (!confirm('Are you sure you want to delete this webhook?')) e.preventDefault();
       });
     });
+
+    // --- 5.3. AI Configuration Logic (BYOK) ---
+    (async function() {
+        const providerSel = document.getElementById('aiProvider');
+        const fieldUrl = document.getElementById('field-url');
+        const fieldKey = document.getElementById('field-key');
+        const modelInput = document.getElementById('aiModel');
+        
+        // 1. Load existing config
+        try {
+            const res = await fetch('/api/v1/config/ai');
+            if(res.ok) {
+                const conf = await res.json();
+                providerSel.value = conf.provider || 'ollama';
+                modelInput.value = conf.model || '';
+                document.getElementById('aiUrl').value = conf.api_url || '';
+                document.getElementById('aiKey').value = conf.api_key || ''; // Will be masked "sk-..."
+                toggleFields();
+            }
+        } catch(e) {}
+
+        // 2. Toggle UI based on provider
+        function toggleFields() {
+            const val = providerSel.value;
+            if (val === 'openai' || val === 'gemini') {
+                fieldUrl.style.display = 'none';
+                fieldKey.style.display = 'block';
+
+                if (val === 'gemini') {
+                  modelInput.placeholder = "gemini-1.5-flash, gemini-1.5-pro";
+                } else {
+                  modelInput.placeholder = "gpt-3.5-turbo, gpt-4o";
+                }
+            } else {
+                fieldUrl.style.display = 'block';
+                fieldKey.style.display = 'none';
+                modelInput.placeholder = "mistral, llama3";
+            }
+        }
+        providerSel.addEventListener('change', toggleFields);
+
+        // 3. Save Handler
+        const form = document.getElementById('aiConfigForm');
+        if (form) {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('btnSaveAI');
+                const msg = document.getElementById('aiSaveMsg');
+                btn.disabled = true;
+                btn.innerText = 'Saving...';
+
+                const payload = {
+                    provider: providerSel.value,
+                    model: modelInput.value,
+                    api_url: document.getElementById('aiUrl').value,
+                    api_key: document.getElementById('aiKey').value
+                };
+
+                // Retrieve CSRF token from meta tag
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+                try {
+                    const res = await fetch('/api/v1/config/ai', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken // Necessary for UI-based API calls if CSRF enabled
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    if (!res.ok) throw new Error();
+
+                    btn.innerText = 'Save AI Settings';
+                    msg.style.opacity = 1;
+                    setTimeout(() => msg.style.opacity = 0, 2000);
+                } catch (err) {
+                    btn.innerText = 'Error';
+                    alert('Failed to save AI settings.');
+                } finally {
+                    btn.disabled = false;
+                }
+            });
+        }
+    })();
   })();
 </script>

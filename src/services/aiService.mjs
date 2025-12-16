@@ -48,6 +48,41 @@ const DEFAULT_SYSTEM_PROMPT = `You are a helpful and concise educational assista
  * @throws {Error} If the document path is invalid or attempts directory traversal.
  */
 export async function generateAIResponse(userId, docPath, userContent) {
+  // --- STEP 0: DETERMINE AI CONFIGURATION ---
+  // Strategy:
+  // 1. Check if global environment variables are set (Admin Override).
+  // 2. If not, check user-specific configuration in the database.
+  // 3. If neither, return a setup instruction.
+
+  let aiConfig = {};
+
+  if (process.env.AI_PROVIDER) {
+    // A. Environment Override (Admin/Server Level)
+    aiConfig = {
+      provider: process.env.AI_PROVIDER,
+      model: process.env.AI_MODEL,
+      apiUrl: process.env.AI_API_URL,
+      apiKey: process.env.AI_API_KEY // Optional global key
+    };
+  } else {
+    // B. User Preference (Database Level)
+    const userConfig = db
+      .prepare('SELECT provider, model, api_url, api_key FROM user_ai_config WHERE user_id = ?')
+      .get(userId);
+
+    if (userConfig) {
+      aiConfig = {
+        provider: userConfig.provider,
+        model: userConfig.model,
+        apiUrl: userConfig.api_url,
+        apiKey: userConfig.api_key
+      };
+    } else {
+      // C. Missing Configuration
+      return '⚠️ AI is not configured. Please go to Settings to set up your AI provider (Ollama or OpenAI).';
+    }
+  }
+
   // --- STEP 1: CONTEXT RETRIEVAL (CACHE-FIRST STRATEGY) ---
 
   let contextText = '';
@@ -56,7 +91,7 @@ export async function generateAIResponse(userId, docPath, userContent) {
   const cachedRecord = db.prepare('SELECT content FROM document_cache WHERE path = ?').get(docPath);
 
   if (cachedRecord) {
-    console.log(`[RAG Service] Cache hit for: ${docPath}`);
+    // console.log(`[RAG Service] Cache hit for: ${docPath}`);
     contextText = cachedRecord.content;
   } else {
     console.log(`[RAG Service] Cache miss. Extracting content for: ${docPath}`);
@@ -126,8 +161,8 @@ export async function generateAIResponse(userId, docPath, userContent) {
 
   // --- STEP 5: AI EXECUTION ---
 
-  // Delegate the actual API call to the agnostic AI Manager
-  const aiResponseText = await askAI(aiMessages);
+  // Delegate the actual API call to the agnostic AI Manager, passing the resolved config
+  const aiResponseText = await askAI(aiMessages, aiConfig);
 
   return aiResponseText;
 }
