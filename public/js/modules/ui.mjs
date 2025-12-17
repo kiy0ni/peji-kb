@@ -43,6 +43,27 @@ export function initSidebar() {
       localStorage.setItem(OPEN_DIRS_STORAGE_KEY, JSON.stringify([...openPathsSet]));
     });
   });
+
+  const currentUrlPath = decodeURIComponent(window.location.pathname);
+  const activeLink = document.querySelector(`.tree-file a[href="${currentUrlPath}"]`);
+
+  if (activeLink) {
+    activeLink.classList.add('active');
+
+    let parentDir = activeLink.closest('details.tree-dir');
+    while (parentDir) {
+      parentDir.setAttribute('open', '');
+      const path = parentDir.getAttribute('data-path');
+      if (path) openPathsSet.add(path);
+      parentDir = parentDir.parentElement.closest('details.tree-dir');
+    }
+
+    localStorage.setItem(OPEN_DIRS_STORAGE_KEY, JSON.stringify([...openPathsSet]));
+
+    setTimeout(() => {
+      activeLink.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 100);
+  }
 }
 
 /**
