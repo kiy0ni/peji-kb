@@ -442,6 +442,7 @@ button:focus-visible {
   background: var(--lavender);
   color: var(--accent-primary);
   font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--accent-primary);
 }
 .tree-file .icon-file {
   font-size: 18px;
